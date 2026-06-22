@@ -4,7 +4,7 @@ print("[KiloUI] Скрипт запущен")
 local success, result = pcall(function()
     print("[KiloUI] Шаг 1: Загрузка библиотеки...")
     
-    local httpResult = game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/KiloUI.lua")
+    local httpResult = game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/KiloUI.lua?v=" .. os.time())
     print("[KiloUI] Шаг 2: HTTP запрос выполнен, длина: " .. #httpResult)
     
     local loadedFunc = loadstring(httpResult)
