@@ -13,8 +13,8 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Theme = {
     Background = Color3.fromRGB(18, 18, 32),
     BackgroundGradient = ColorSequence.new{
-        TweenService and Color3.fromRGB(18, 18, 32) or Color3.new(),
-        Color3.fromRGB(22, 28, 48)
+        ColorSequenceKeypoint.new(0, TweenService and Color3.fromRGB(18, 18, 32) or Color3.new()),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 28, 48))
     },
     Sidebar = Color3.fromRGB(14, 14, 26),
     SidebarHover = Color3.fromRGB(24, 24, 42),
@@ -22,8 +22,8 @@ local Theme = {
     Accent = Color3.fromRGB(240, 165, 0),
     AccentDark = Color3.fromRGB(207, 117, 0),
     AccentGradient = ColorSequence.new{
-        Color3.fromRGB(255, 190, 50),
-        Color3.fromRGB(240, 140, 0)
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 190, 50)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 140, 0))
     },
     TextPrimary = Color3.fromRGB(235, 235, 245),
     TextSecondary = Color3.fromRGB(160, 160, 180),
@@ -121,7 +121,7 @@ function KiloUI:CreateWindow(config)
     elseif themeName == "Ocean" then
         Theme.Accent = Color3.fromRGB(0, 160, 220)
         Theme.AccentDark = Color3.fromRGB(0, 120, 180)
-        Theme.AccentGradient = ColorSequence.new{Color3.fromRGB(50, 190, 255), Color3.fromRGB(0, 130, 200)}
+        Theme.AccentGradient = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 190, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 130, 200))}
         Theme.ToggleOn = Color3.fromRGB(0, 160, 220)
         Theme.SliderFill = Color3.fromRGB(0, 160, 220)
         Theme.BorderAccent = Color3.fromRGB(0, 160, 220)
@@ -129,7 +129,7 @@ function KiloUI:CreateWindow(config)
     elseif themeName == "Emerald" then
         Theme.Accent = Color3.fromRGB(40, 200, 120)
         Theme.AccentDark = Color3.fromRGB(20, 160, 90)
-        Theme.AccentGradient = ColorSequence.new{Color3.fromRGB(80, 230, 150), Color3.fromRGB(30, 180, 100)}
+        Theme.AccentGradient = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 230, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 180, 100))}
         Theme.ToggleOn = Color3.fromRGB(40, 200, 120)
         Theme.SliderFill = Color3.fromRGB(40, 200, 120)
         Theme.BorderAccent = Color3.fromRGB(40, 200, 120)
@@ -137,7 +137,7 @@ function KiloUI:CreateWindow(config)
     elseif themeName == "Serenity" then
         Theme.Accent = Color3.fromRGB(160, 100, 220)
         Theme.AccentDark = Color3.fromRGB(120, 60, 180)
-        Theme.AccentGradient = ColorSequence.new{Color3.fromRGB(190, 130, 255), Color3.fromRGB(140, 80, 200)}
+        Theme.AccentGradient = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 130, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 80, 200))}
         Theme.ToggleOn = Color3.fromRGB(160, 100, 220)
         Theme.SliderFill = Color3.fromRGB(160, 100, 220)
         Theme.BorderAccent = Color3.fromRGB(160, 100, 220)
@@ -177,8 +177,8 @@ function KiloUI:CreateWindow(config)
         }),
         make("UIGradient", {
             Color = ColorSequence.new{
-                Color3.fromRGB(22, 22, 38),
-                Color3.fromRGB(18, 18, 32),
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 22, 38)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 32)),
             },
             Rotation = 135,
         }),
@@ -274,8 +274,8 @@ function KiloUI:CreateWindow(config)
         }),
         make("UIGradient", {
             Color = ColorSequence.new{
-                Color3.fromRGB(22, 22, 40),
-                Color3.fromRGB(16, 16, 30),
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 22, 40)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 16, 30)),
             },
             Rotation = 160,
         }),
@@ -1098,8 +1098,8 @@ function KiloUI:CreateWindow(config)
             }),
             make("UIGradient", {
                 Color = ColorSequence.new{
-                    Color3.fromRGB(24, 24, 42),
-                    Color3.fromRGB(18, 18, 34),
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 24, 42)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 34)),
                 },
                 Rotation = 135,
             }),
