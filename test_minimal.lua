@@ -1,0 +1,2 @@
+print("HELLO FROM KILO")
+warn("TEST WARNING")
