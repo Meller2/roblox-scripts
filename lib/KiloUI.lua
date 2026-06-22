@@ -399,17 +399,6 @@ function KiloUI:CreateWindow(config)
         make("UICorner", {CornerRadius = UDim.new(0, 14)}),
     })
 
-    -- // Sidebar bottom fix
-    local sidebarFix = make("Frame", {
-        BackgroundColor3 = Theme.Sidebar,
-        BackgroundTransparency = 0.15,
-        BorderSizePixel = 0,
-        Position = UDim2.new(1, -14, 0, 0),
-        Size = UDim2.new(0, 14, 1, 0),
-        ZIndex = 11,
-        Parent = sidebar,
-    })
-
     -- // Sidebar vertical accent line
     make("Frame", {
         AnchorPoint = Vector2.new(1, 0),
