@@ -1,47 +1,110 @@
--- // ДИАГНОСТИКА: проверяем на каком этапе падает
-print("[KiloUI] Скрипт запущен")
+-- // Fluent UI Test
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v=" .. os.time()))()
 
-local success, result = pcall(function()
-    print("[KiloUI] Шаг 1: Загрузка библиотеки...")
-    
-    local httpResult = game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/KiloUI.lua?v=" .. os.time())
-    print("[KiloUI] Шаг 2: HTTP запрос выполнен, длина: " .. #httpResult)
-    
-    local loadedFunc = loadstring(httpResult)
-    print("[KiloUI] Шаг 3: loadstring выполнен")
-    
-    local KiloUI = loadedFunc()
-    print("[KiloUI] Шаг 4: Библиотека загружена")
-    
-    print("[KiloUI] Шаг 5: Создание окна...")
-    local Window = KiloUI:CreateWindow({
-        Name = "BABFT Gold Farm Hub",
-        LoadingTitle = "Запуск интерфейса...",
-        LoadingSubtitle = "by KiloUI",
-        Theme = "Default",
-    })
-    print("[KiloUI] Шаг 6: Окно создано")
+local Window = Fluent:CreateWindow({
+    Title = "BABFT Gold Farm",
+    SubTitle = "by KiloUI",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-    local Tab1 = Window:CreateTab("Главная", nil)
-    Tab1:CreateSection("Тест элементов")
-    Tab1:CreateLabel("Это тестовая метка")
-    Tab1:CreateToggle({Name = "Автофарм", Callback = function(v) print("Toggle:", v) end})
-    Tab1:CreateSlider({Name = "Скорость", Min = 1, Max = 100, Default = 50, Callback = function(v) print("Slider:", v) end})
-    Tab1:CreateButton({Name = "Тест кнопка", Callback = function() Window:Notify({Title = "Успех!", Content = "Кнопка нажата", Duration = 3}) end})
+local Tabs = {
+    Main = Window:AddTab({ Title = "Главная", Icon = "home" }),
+    Settings = Window:AddTab({ Title = "Настройки", Icon = "settings" })
+}
 
-    local Tab2 = Window:CreateTab("Настройки", nil)
-    Tab2:CreateSection("Настройки")
-    Tab2:CreateToggle({Name = "Тёмная тема", CurrentValue = true, Callback = function(v) print("Theme:", v) end})
+local Options = Fluent.Options
 
-    print("[KiloUI] Шаг 7: Табы и элементы созданы")
+-- // Notification
+Fluent:Notify({
+    Title = "Загрузка завершена",
+    Content = "Fluent UI успешно загружен",
+    SubContent = "by KiloUI",
+    Duration = 5
+})
 
-    Window:Notify({Title = "KiloUI загружен", Content = "Все элементы работают", Duration = 4})
+-- // Paragraph
+Tabs.Main:AddParagraph({
+    Title = "Статус",
+    Content = "Скрипт готов к работе\nВерсия: 1.0"
+})
 
-    return Window
+-- // Button
+Tabs.Main:AddButton({
+    Title = "Тест кнопка",
+    Description = "Нажми меня",
+    Callback = function()
+        Fluent:Notify({
+            Title = "Успех",
+            Content = "Кнопка нажата!",
+            Duration = 3
+        })
+    end
+})
+
+-- // Toggle
+local Toggle = Tabs.Main:AddToggle("AutoFarm", {Title = "Автофарм", Default = false})
+
+Toggle:OnChanged(function()
+    print("Автофарм:", Options.AutoFarm.Value)
 end)
 
-if not success then
-    warn("[KiloUI] ОШИБКА: " .. tostring(result))
-else
-    print("[KiloUI] УСПЕХ! Окно создано.")
-end
+-- // Slider
+local Slider = Tabs.Main:AddSlider("Speed", {
+    Title = "Скорость",
+    Description = "Скорость фарма",
+    Default = 50,
+    Min = 0,
+    Max = 100,
+    Rounding = 0,
+    Callback = function(Value)
+        print("Скорость:", Value)
+    end
+})
+
+-- // Dropdown
+local Dropdown = Tabs.Main:AddDropdown("Weapon", {
+    Title = "Оружие",
+    Values = {"Меч", "Лук", "Посох", "Кинжал"},
+    Multi = false,
+    Default = 1,
+})
+
+Dropdown:SetValue("Меч")
+
+Dropdown:OnChanged(function(Value)
+    print("Оружие:", Value)
+end)
+
+-- // Keybind
+local Keybind = Tabs.Main:AddKeybind("ToggleKey", {
+    Title = "Клавиша",
+    Mode = "Toggle",
+    Default = "RightShift",
+    Callback = function(Value)
+        print("Клавиша:", Value)
+    end
+})
+
+-- // Colorpicker
+local Colorpicker = Tabs.Main:AddColorpicker("AccentColor", {
+    Title = "Цвет акцента",
+    Default = Color3.fromRGB(240, 165, 0)
+})
+
+Colorpicker:OnChanged(function()
+    print("Цвет:", Colorpicker.Value)
+end)
+
+-- // Settings tab
+Tabs.Settings:AddParagraph({
+    Title = "Настройки",
+    Content = "Здесь будут настройки скрипта"
+})
+
+Window:SelectTab(1)
+
+print("[Fluent] UI загружен успешно!")
