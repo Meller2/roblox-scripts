@@ -122,6 +122,21 @@ local CopyCorner = Instance.new("UICorner")
 CopyCorner.CornerRadius = UDim.new(0, 6)
 CopyCorner.Parent = CopyBtn
 
+-- // Кнопка сохранения в файл
+local SaveBtn = Instance.new("TextButton")
+SaveBtn.Size = UDim2.new(0, 100, 0, 25)
+SaveBtn.Position = UDim2.new(0, 190, 0, 5)
+SaveBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 80)
+SaveBtn.Text = "В файл (UTF-8)"
+SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveBtn.TextSize = 12
+SaveBtn.Font = Enum.Font.Gotham
+SaveBtn.Parent = ControlBar
+
+local SaveCorner = Instance.new("UICorner")
+SaveCorner.CornerRadius = UDim.new(0, 6)
+SaveCorner.Parent = SaveBtn
+
 -- // Счётчик логов
 local CountLabel = Instance.new("TextLabel")
 CountLabel.Size = UDim2.new(0, 150, 0, 25)
@@ -264,6 +279,39 @@ ClearBtn.MouseButton1Click:Connect(function()
     CountLabel.Text = "Логов: 0"
 end)
 
+-- // Кнопка сохранения в файл (UTF-8 с BOM для кириллицы)
+SaveBtn.MouseButton1Click:Connect(function()
+    if #logs == 0 then
+        addLog("Нет логов для сохранения", Color3.fromRGB(255, 100, 100))
+        return
+    end
+    
+    if not writefile then
+        addLog("⚠ writefile() недоступен в этом executor", Color3.fromRGB(255, 200, 50))
+        return
+    end
+    
+    local allText = ""
+    for _, log in ipairs(logs) do
+        allText = allText .. (SHOW_TIMESTAMPS and "[" .. log.time .. "] " or "") .. log.text .. "\n"
+    end
+    
+    local filePath = "kilo_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".txt"
+    -- UTF-8 BOM для корректного отображения кириллицы в Windows
+    local utf8Bom = "\239\187\191"
+    
+    local success, err = pcall(function()
+        writefile(filePath, utf8Bom .. allText)
+    end)
+    
+    if success then
+        addLog("✓ Сохранено: " .. filePath, Color3.fromRGB(100, 255, 100))
+        addLog("  Файл в папке executor, откройте блокнотом", Color3.fromRGB(180, 180, 200))
+    else
+        addLog("⚠ Ошибка сохранения: " .. tostring(err), Color3.fromRGB(255, 100, 100))
+    end
+end)
+
 -- // Кнопка копирования
 CopyBtn.MouseButton1Click:Connect(function()
     if #logs == 0 then
@@ -276,44 +324,129 @@ CopyBtn.MouseButton1Click:Connect(function()
         allText = allText .. (SHOW_TIMESTAMPS and "[" .. log.time .. "] " or "") .. log.text .. "\n"
     end
     
-    -- Пытаемся скопировать в буфер обмена
-    if setclipboard then
-        setclipboard(allText)
-        addLog("✓ Скопировано в буфер обмена (" .. #logs .. " логов)", Color3.fromRGB(100, 255, 100))
-    else
-        -- Если setclipboard недоступен, создаём TextBox для ручного копирования
-        addLog("⚠ setclipboard() недоступен. Используйте F9 для копирования", Color3.fromRGB(255, 200, 50))
-        
-        local TempBox = Instance.new("TextBox")
-        TempBox.Size = UDim2.new(0, 400, 0, 300)
-        TempBox.Position = UDim2.new(0.5, -200, 0.5, -150)
-        TempBox.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        TempBox.Text = allText
-        TempBox.TextColor3 = Color3.fromRGB(220, 220, 230)
-        TempBox.TextSize = 11
-        TempBox.Font = Enum.Font.Code
-        TempText.TextWrapped = true
-        TempBox.TextXAlignment = Enum.TextXAlignment.Left
-        TempBox.TextYAlignment = Enum.TextYAlignment.Top
-        TempBox.ClearTextOnFocus = false
-        TempBox.MultiLine = true
-        TempBox.Parent = ScreenGui
-        
-        local TempCorner = Instance.new("UICorner")
-        TempCorner.CornerRadius = UDim.new(0, 8)
-        TempCorner.Parent = TempBox
-        
-        local TempStroke = Instance.new("UIStroke")
-        TempStroke.Color = Color3.fromRGB(100, 100, 120)
-        TempStroke.Thickness = 2
-        TempStroke.Parent = TempBox
-        
-        task.delay(10, function()
-            if TempBox.Parent then
-                TempBox:Destroy()
-            end
+    -- Метод 1: Запись в файл с UTF-8 BOM (самый надёжный для кириллицы)
+    if writefile then
+        local filePath = "kilo_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".txt"
+        -- Добавляем UTF-8 BOM для корректного отображения кириллицы
+        local utf8Bom = "\239\187\191"
+        local success, err = pcall(function()
+            writefile(filePath, utf8Bom .. allText)
         end)
+        if success then
+            addLog("✓ Логи сохранены в файл: " .. filePath, Color3.fromRGB(100, 255, 100))
+            addLog("  Откройте файл и скопируйте текст", Color3.fromRGB(180, 180, 200))
+            
+            -- Пытаемся также скопировать через setclipboard
+            if setclipboard then
+                local clipSuccess = pcall(function()
+                    setclipboard(allText)
+                end)
+                if clipSuccess then
+                    addLog("✓ Также скопировано в буфер обмена", Color3.fromRGB(100, 255, 100))
+                else
+                    addLog("⚠ setclipboard() не сработал, используйте файл", Color3.fromRGB(255, 200, 50))
+                end
+            end
+            return
+        else
+            addLog("⚠ Ошибка записи файла: " .. tostring(err), Color3.fromRGB(255, 200, 50))
+        end
     end
+    
+    -- Метод 2: setclipboard (может иметь проблемы с кириллицей)
+    if setclipboard then
+        local success = pcall(function()
+            setclipboard(allText)
+        end)
+        if success then
+            addLog("✓ Скопировано в буфер обмена (" .. #logs .. " логов)", Color3.fromRGB(100, 255, 100))
+            addLog("⚠ Если кириллица с артефактами - используйте запись в файл", Color3.fromRGB(255, 200, 50))
+        else
+            addLog("⚠ setclipboard() не доступен", Color3.fromRGB(255, 200, 50))
+        end
+    end
+    
+    -- Метод 3: TextBox для ручного копирования
+    addLog("Создаю окно для ручного копирования...", Color3.fromRGB(180, 180, 200))
+    
+    -- Удаляем старое окно если есть
+    if ScreenGui:FindFirstChild("CopyTextBox") then
+        ScreenGui.CopyTextBox:Destroy()
+    end
+    
+    local CopyFrame = Instance.new("Frame")
+    CopyFrame.Name = "CopyTextBox"
+    CopyFrame.Size = UDim2.new(0, 500, 0, 400)
+    CopyFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    CopyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    CopyFrame.BorderSizePixel = 0
+    CopyFrame.ZIndex = 100
+    CopyFrame.Parent = ScreenGui
+    
+    local CopyFrameCorner = Instance.new("UICorner")
+    CopyFrameCorner.CornerRadius = UDim.new(0, 10)
+    CopyFrameCorner.Parent = CopyFrame
+    
+    local CopyFrameStroke = Instance.new("UIStroke")
+    CopyFrameStroke.Color = Color3.fromRGB(100, 100, 150)
+    CopyFrameStroke.Thickness = 2
+    CopyFrameStroke.Parent = CopyFrame
+    
+    local CopyTitle = Instance.new("TextLabel")
+    CopyTitle.Size = UDim2.new(1, -40, 0, 30)
+    CopyTitle.Position = UDim2.new(0, 10, 0, 5)
+    CopyTitle.BackgroundTransparency = 1
+    CopyTitle.Text = "Выделите текст и нажмите Ctrl+C"
+    CopyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CopyTitle.TextSize = 13
+    CopyTitle.Font = Enum.Font.GothamBold
+    CopyTitle.TextXAlignment = Enum.TextXAlignment.Left
+    CopyTitle.ZIndex = 101
+    CopyTitle.Parent = CopyFrame
+    
+    local CloseCopyBtn = Instance.new("TextButton")
+    CloseCopyBtn.Size = UDim2.new(0, 25, 0, 25)
+    CloseCopyBtn.Position = UDim2.new(1, -30, 0, 5)
+    CloseCopyBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    CloseCopyBtn.Text = "X"
+    CloseCopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseCopyBtn.TextSize = 12
+    CloseCopyBtn.Font = Enum.Font.GothamBold
+    CloseCopyBtn.ZIndex = 101
+    CloseCopyBtn.Parent = CopyFrame
+    
+    local CloseCopyCorner = Instance.new("UICorner")
+    CloseCopyCorner.CornerRadius = UDim.new(0, 6)
+    CloseCopyCorner.Parent = CloseCopyBtn
+    
+    CloseCopyBtn.MouseButton1Click:Connect(function()
+        CopyFrame:Destroy()
+    end)
+    
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(1, -20, 1, -40)
+    TextBox.Position = UDim2.new(0, 10, 0, 35)
+    TextBox.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    TextBox.Text = allText
+    TextBox.TextColor3 = Color3.fromRGB(220, 220, 230)
+    TextBox.TextSize = 11
+    TextBox.Font = Enum.Font.Code
+    TextBox.TextWrapped = true
+    TextBox.TextXAlignment = Enum.TextXAlignment.Left
+    TextBox.TextYAlignment = Enum.TextYAlignment.Top
+    TextBox.ClearTextOnFocus = false
+    TextBox.MultiLine = true
+    TextBox.ZIndex = 101
+    TextBox.Parent = CopyFrame
+    
+    local TextBoxCorner = Instance.new("UICorner")
+    TextBoxCorner.CornerRadius = UDim.new(0, 6)
+    TextBoxCorner.Parent = TextBox
+    
+    TextBox.MouseButton1Click:Connect(function()
+        TextBox.SelectionStart = 1
+        TextBox.CursorPosition = #TextBox.Text + 1
+    end)
 end)
 
 -- // Кнопка закрытия
