@@ -1,249 +1,101 @@
--- // BABFT Gold Farm с диагностикой
-print("[BABFT] Загрузка Fluent UI...")
+-- // KiloUI Script Hub v1.0
+-- // Универсальный хаб с автоопределением плейса
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua", true))()
-
-print("[BABFT] Fluent загружен: " .. tostring(Fluent))
-
-local Window = Fluent:CreateWindow({
-    Title = "BABFT Gold Farm",
-    SubTitle = "by KiloUI",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
-
-local Tabs = {
-    Farm = Window:AddTab({ Title = "Автофарм", Icon = "coins" }),
-    Log = Window:AddTab({ Title = "Логи", Icon = "scroll-text" })
-}
-
-local Options = Fluent.Options
-
--- // НАСТРОЙКИ
-getgenv().GoldFarmActive = false
-getgenv().TimeBetweenStages = 2.5
-
--- // СЕРВИСЫ
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- // Логирование
-local logBuffer = {}
-local function log(msg)
-    local time = os.date("%H:%M:%S")
-    local fullMsg = "[" .. time .. "] " .. msg
-    print(fullMsg)
-    table.insert(logBuffer, fullMsg)
-    if #logBuffer > 50 then
-        table.remove(logBuffer, 1)
-    end
-    if logLabel then
-        logLabel.Text = table.concat(logBuffer, "\n")
-    end
-end
+-- // Определяем текущий плейс
+local PlaceId = game.PlaceId
+local GameName = ""
 
--- // Функция создания платформы
-local function createTempPlatform(position)
-    local platform = Instance.new("Part")
-    platform.Size = Vector3.new(10, 1, 10)
-    platform.Position = position - Vector3.new(0, 3.5, 0)
-    platform.Anchored = true
-    platform.Transparency = 1
-    platform.CanCollide = true
-    platform.Parent = Workspace
-    return platform
-end
+print("[KiloUI Hub] Запуск...")
+print("[KiloUI Hub] Place ID: " .. PlaceId)
 
--- // Основная логика фарма
-local function startGoldFarm()
-    log("Начало цикла фарма")
+-- // Маппинг плейсов
+local GameScripts = {
+    [189707] = {
+        Name = "Build a Boat for Treasure",
+        Script = "https://raw.githubusercontent.com/Meller2/roblox-scripts/master/scripts/babft.lua"
+    },
+    [3351674303] = {
+        Name = "Driving Empire",
+        Script = "https://raw.githubusercontent.com/Meller2/roblox-scripts/master/scripts/driving_empire.lua"
+    }
+}
+
+-- // Проверяем есть ли скрипт для этого плейса
+local GameInfo = GameScripts[PlaceId]
+
+if GameInfo then
+    GameName = GameInfo.Name
+    print("[KiloUI Hub] Обнаружена игра: " .. GameName)
+    print("[KiloUI Hub] Загрузка скрипта...")
     
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = character:WaitForChild("HumanoidRootPart")
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    log("Персонаж найден: " .. tostring(hrp.Position))
-    
-    local normalStages = Workspace:WaitForChild("BoatStages"):WaitForChild("NormalStages")
-    
-    for i = 1, 10 do
-        if not getgenv().GoldFarmActive then 
-            log("Фарм остановлен на этапе " .. i)
-            return 
-        end
-
-        local stageName = "CaveStage" .. i
-        log("Переход к этапу: " .. stageName)
-        
-        local stage = normalStages:FindFirstChild(stageName)
-
-        if stage then
-            local darknessPart = stage:FindFirstChild("DarknessPart")
-            if darknessPart then
-                log("Телепорт к DarknessPart " .. i)
-                
-                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                hrp.CFrame = darknessPart.CFrame
-
-                local platform = createTempPlatform(hrp.Position)
-                log("Платформа создана")
-
-                local waited = 0
-                while waited < getgenv().TimeBetweenStages do
-                    if not getgenv().GoldFarmActive then
-                        platform:Destroy()
-                        log("Фарм остановлен во время ожидания")
-                        return
-                    end
-                    task.wait(0.1)
-                    waited = waited + 0.1
-                end
-
-                platform:Destroy()
-                log("Этап " .. i .. " завершён")
-            else
-                log("ОШИБКА: DarknessPart не найден на этапе " .. i)
-            end
-        else
-            log("ОШИБКА: " .. stageName .. " не найден")
-        end
-    end
-
-    if getgenv().GoldFarmActive then
-        log("Переход к TheEnd")
-        local theEnd = normalStages:FindFirstChild("TheEnd")
-        if theEnd then
-            local chest = theEnd:FindFirstChild("GoldenChest")
-            if chest then
-                local trigger = chest:FindFirstChild("Trigger")
-                if trigger then
-                    log("Телепорт к Trigger")
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    hrp.CFrame = trigger.CFrame + Vector3.new(0, 3, 0)
-
-                    task.wait(1)
-                    if firetouchinterest then
-                        log("Использование firetouchinterest")
-                        firetouchinterest(hrp, trigger, 0)
-                        task.wait(0.1)
-                        firetouchinterest(hrp, trigger, 1)
-                    else
-                        log("ОШИБКА: firetouchinterest недоступен!")
-                    end
-                end
-            end
-        end
-    end
-
-    log("Ожидание респавна...")
-    local respawned = false
-    local connection
-    connection = LocalPlayer.CharacterAdded:Connect(function()
-        respawned = true
-        connection:Disconnect()
-        log("Респавн произошёл")
+    local success, err = pcall(function()
+        local scriptContent = game:HttpGet(GameInfo.Script, true)
+        loadstring(scriptContent)()
     end)
-
-    task.delay(10, function()
-        if not respawned and humanoid then
-            log("Принудительная смерть персонажа")
-            humanoid.Health = 0
-        end
+    
+    if not success then
+        warn("[KiloUI Hub] Ошибка загрузки скрипта: " .. tostring(err))
+    end
+else
+    -- // Игра не поддерживается - показываем уведомление
+    print("[KiloUI Hub] Игра не поддерживается: Place ID " .. PlaceId)
+    
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "KiloUI_Hub_Error"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 400, 0, 150)
+    Frame.Position = UDim2.new(0.5, -200, 0.5, -75)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = ScreenGui
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 12)
+    Corner.Parent = Frame
+    
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.Position = UDim2.new(0, 0, 0, 10)
+    Title.BackgroundTransparency = 1
+    Title.Text = "KiloUI Script Hub"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = Frame
+    
+    local Text = Instance.new("TextLabel")
+    Text.Size = UDim2.new(1, -40, 0, 60)
+    Text.Position = UDim2.new(0, 20, 0, 45)
+    Text.BackgroundTransparency = 1
+    Text.Text = "Игра не поддерживается\nPlace ID: " .. PlaceId .. "\n\nПоддерживаемые игры:\n- Build a Boat for Treasure (189707)\n- Driving Empire (3351674303)"
+    Text.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Text.TextSize = 13
+    Text.Font = Enum.Font.Gotham
+    Text.TextWrapped = true
+    Text.TextXAlignment = Enum.TextXAlignment.Left
+    Text.Parent = Frame
+    
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 80, 0, 30)
+    CloseBtn.Position = UDim2.new(0.5, -40, 1, -40)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(240, 165, 0)
+    CloseBtn.Text = "OK"
+    CloseBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    CloseBtn.TextSize = 14
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.Parent = Frame
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 8)
+    BtnCorner.Parent = CloseBtn
+    
+    CloseBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
     end)
-
-    repeat
-        if not getgenv().GoldFarmActive then 
-            log("Фарм остановлен во время ожидания респавна")
-            return 
-        end
-        task.wait()
-    until respawned
-    task.wait(2)
-    log("Цикл фарма завершён")
 end
-
--- // Фоновый цикл
-task.spawn(function()
-    log("Фоновый цикл запущен")
-    while true do
-        task.wait(1)
-        if getgenv().GoldFarmActive then
-            local success, err = pcall(startGoldFarm)
-            if not success then
-                log("ОШИБКА: " .. tostring(err))
-            end
-        end
-    end
-end)
-
--- // UI ЭЛЕМЕНТЫ
-Tabs.Farm:AddParagraph({
-    Title = "BABFT Gold Farm",
-    Content = "Автоматический сбор золота\nВерсия: 1.2 (Fluent UI + Logs)"
-})
-
-Tabs.Farm:AddSection("Управление")
-
-local FarmToggle = Tabs.Farm:AddToggle("GoldFarm", {
-    Title = "Активировать фарм золота",
-    Default = false
-})
-
-FarmToggle:OnChanged(function(Value)
-    getgenv().GoldFarmActive = Value
-    log("Toggle изменён: " .. tostring(Value))
-    if Value then
-        Fluent:Notify({
-            Title = "Фарм запущен!",
-            Content = "Смотри вкладку Логи",
-            Duration = 4
-        })
-    else
-        Fluent:Notify({
-            Title = "Фарм остановлен",
-            Duration = 3
-        })
-    end
-end)
-
-Tabs.Farm:AddSection("Настройки")
-
-local SpeedSlider = Tabs.Farm:AddSlider("FarmSpeed", {
-    Title = "Задержка на этапах",
-    Description = "Меньше 2.5 сек не рекомендуется",
-    Default = 2.5,
-    Min = 1.5,
-    Max = 5.0,
-    Rounding = 1,
-    Callback = function(Value)
-        getgenv().TimeBetweenStages = Value
-        log("Задержка изменена: " .. Value .. " сек")
-    end
-})
-
--- // Лог таб
-Tabs.Log:AddParagraph({
-    Title = "Лог событий",
-    Content = "Здесь отображаются все действия скрипта"
-})
-
-local logLabel = Tabs.Log.Frame:FindFirstChildOfClass("TextLabel")
-if logLabel then
-    logLabel.TextXAlignment = Enum.TextXAlignment.Left
-    logLabel.TextYAlignment = Enum.TextYAlignment.Top
-    logLabel.Size = UDim2.new(1, -20, 1, -20)
-    logLabel.Position = UDim2.new(0, 10, 0, 10)
-    logLabel.TextWrapped = true
-end
-
-Window:SelectTab(1)
-
-Fluent:Notify({
-    Title = "BABFT Gold Farm",
-    Content = "Скрипт загружен. Включи фарм и смотри логи.",
-    Duration = 5
-})
