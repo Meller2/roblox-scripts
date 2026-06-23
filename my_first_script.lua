@@ -32,8 +32,21 @@ if GameInfo then
     print("[KiloUI Hub] Загрузка скрипта...")
     
     local success, err = pcall(function()
-        local scriptContent = game:HttpGet(GameInfo.Script, true)
-        loadstring(scriptContent)()
+        local scriptUrl = GameInfo.Script .. "?v=" .. tostring(os.time())
+        print("[KiloUI Hub] URL: " .. scriptUrl)
+        local scriptContent = game:HttpGet(scriptUrl, true)
+        if type(scriptContent) ~= "string" or scriptContent == "" then
+            warn("[KiloUI Hub] game:HttpGet вернул пустой/неверный ответ: " .. tostring(scriptContent))
+            return
+        end
+        print("[KiloUI Hub] Получено байт: " .. tostring(#scriptContent))
+        local func, loadErr = loadstring(scriptContent)
+        if not func then
+            warn("[KiloUI Hub] Синтаксическая ошибка в скрипте: " .. tostring(loadErr))
+            warn("[KiloUI Hub] Первые 300 символов:\n" .. scriptContent:sub(1, 300))
+            return
+        end
+        func()
     end)
     
     if not success then

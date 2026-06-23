@@ -724,7 +724,7 @@ end
 
 Tabs.Stats:AddSection("Статистика фарма")
 
-Tabs.Stats:AddLabel = Tabs.Stats:AddParagraph({
+Tabs.Stats:AddParagraph({
     Title = "Прогресс",
     Content = "Гонок завершено: " .. raceCount .. "\nВсего заработано: " .. totalEarnings
 })
