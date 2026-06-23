@@ -322,11 +322,19 @@ Tabs.Stats:AddSection("leaderstats")
 
 local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
 if leaderstats then
+    local statsText = ""
     for _, stat in ipairs(leaderstats:GetChildren()) do
-        Tabs.Stats:AddLabel(stat.Name .. ": " .. tostring(stat.Value))
+        statsText = statsText .. stat.Name .. ": " .. tostring(stat.Value) .. "\n"
     end
+    Tabs.Stats:AddParagraph({
+        Title = "Текущие статы",
+        Content = statsText
+    })
 else
-    Tabs.Stats:AddLabel("leaderstats не найден")
+    Tabs.Stats:AddParagraph({
+        Title = "Статы",
+        Content = "leaderstats не найден"
+    })
 end
 
 -- // Log tab
