@@ -1,4 +1,5 @@
--- // Log Viewer - Просмотрщик логов с возможностью копирования
+-- // Log Viewer v2 - Просмотрщик логов с возможностью копирования
+-- // Версия: 2.0 (2026-06-23)
 -- // Перехватывает print() и warn() и отображает в UI окне
 
 local Players = game:GetService("Players")
@@ -396,8 +397,8 @@ CopyBtn.MouseButton1Click:Connect(function()
     CopyTitle.Size = UDim2.new(1, -40, 0, 30)
     CopyTitle.Position = UDim2.new(0, 10, 0, 5)
     CopyTitle.BackgroundTransparency = 1
-    CopyTitle.Text = "Выделите текст и нажмите Ctrl+C"
-    CopyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CopyTitle.Text = "Кликните по тексту → Ctrl+A → Ctrl+C"
+    CopyTitle.TextColor3 = Color3.fromRGB(100, 255, 100)
     CopyTitle.TextSize = 13
     CopyTitle.Font = Enum.Font.GothamBold
     CopyTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -443,7 +444,16 @@ CopyBtn.MouseButton1Click:Connect(function()
     TextBoxCorner.CornerRadius = UDim.new(0, 6)
     TextBoxCorner.Parent = TextBox
     
+    -- Автоматическое выделение всего текста при клике
     TextBox.MouseButton1Click:Connect(function()
+        TextBox:CaptureFocus()
+        task.wait(0.05)
+        TextBox.SelectionStart = 1
+        TextBox.CursorPosition = #TextBox.Text + 1
+    end)
+    
+    TextBox.Focused:Connect(function()
+        task.wait(0.05)
         TextBox.SelectionStart = 1
         TextBox.CursorPosition = #TextBox.Text + 1
     end)
