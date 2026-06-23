@@ -4,6 +4,15 @@
 print("[DE v3] Загрузка скрипта...")
 
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
+
+-- Фикс __namecall для корректной работы методов вкладок в Solara
+if Fluent and Fluent.Elements and Fluent.Elements.__namecall then
+    local Elements = Fluent.Elements
+    Elements.__namecall = function(self, key, ...)
+        return Elements[key](self, ...)
+    end
+end
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
