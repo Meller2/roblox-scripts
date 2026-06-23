@@ -33,6 +33,19 @@ local Tabs = {
     Log = Window:AddTab({ Title = "Логи", Icon = "scroll-text" })
 }
 
+-- Прямые методы для обхода __namecall в Solara
+for _, tab in pairs(Tabs) do
+    if type(tab) == "table" then
+        for name, method in pairs(Fluent.Elements) do
+            if type(method) == "function" and name:sub(1, 3) == "Add" then
+                tab[name] = function(...)
+                    return method(tab, ...)
+                end
+            end
+        end
+    end
+end
+
 local Options = Fluent.Options
 
 -- // НАСТРОЙКИ
