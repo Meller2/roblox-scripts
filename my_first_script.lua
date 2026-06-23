@@ -1,35 +1,47 @@
--- // 1. ЗАГРУЗКА UI БИБЛИОТЕКИ KiloUI
-local KiloUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/KiloUI.lua"))()
+-- // 1. ЗАГРУЗКА FLuent UI
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 
 -- // 2. ИНИЦИАЛИЗАЦИЯ ОКНА
-local Window = KiloUI:CreateWindow({
-    Name = "BABFT Gold Farm Hub",
-    LoadingTitle = "Запуск интерфейса...",
-    LoadingSubtitle = "by KiloUI",
-    Theme = "Default",
+local Window = Fluent:CreateWindow({
+    Title = "BABFT Gold Farm",
+    SubTitle = "by KiloUI",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- // НАСТРОЙКИ ФАРМА (Глобальные переменные)
+local Tabs = {
+    Farm = Window:AddTab({ Title = "Автофарм", Icon = "coins" }),
+    Settings = Window:AddTab({ Title = "Настройки", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+-- // НАСТРОЙКИ ФАРМА
 getgenv().GoldFarmActive = false
 getgenv().TimeBetweenStages = 2.5
 
--- // СЕРВИСЫ ROBLOX
+-- // СЕРВИСЫ
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- // Функция создания невидимой платформы под ногами
+-- // Функция создания платформы
 local function createTempPlatform(position)
     local platform = Instance.new("Part")
     platform.Size = Vector3.new(10, 1, 10)
     platform.Position = position - Vector3.new(0, 3.5, 0)
     platform.Anchored = true
     platform.Transparency = 1
+    platform.CanCollide = true
     platform.Parent = Workspace
     return platform
 end
 
--- // Основная логика одного круга фарма
+-- // Основная логика фарма
 local function startGoldFarm()
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
@@ -106,61 +118,74 @@ local function startGoldFarm()
     task.wait(2)
 end
 
--- // Фоновый цикл фарма
+-- // Фоновый цикл
 task.spawn(function()
     while true do
         task.wait(1)
         if getgenv().GoldFarmActive then
             local success, err = pcall(startGoldFarm)
             if not success then
-                warn("Ошибка фарма: " .. tostring(err))
+                warn("[BABFT] Ошибка фарма: " .. tostring(err))
             end
         end
     end
 end)
 
--- // 3. СОЗДАНИЕ ВКЛАДОК
-local FarmTab = Window:CreateTab("Автофарм", 4483362458)
-
-FarmTab:CreateSection("Управление")
-
-local FarmToggle = FarmTab:CreateToggle({
-    Name = "Активировать фарм золота",
-    CurrentValue = false,
-    Flag = "GoldFarmToggle",
-    Callback = function(Value)
-        getgenv().GoldFarmActive = Value
-
-        if Value then
-            Window:Notify({
-                Title = "Фарм запущен!",
-                Content = "Персонаж начал сбор. Не закрывайте игру.",
-                Duration = 4,
-                Image = 4483362458,
-            })
-        else
-            Window:Notify({
-                Title = "Фарм остановлен",
-                Content = "Автоматизация завершена. Вы можете играть сами.",
-                Duration = 4,
-                Image = 4483362458,
-            })
-        end
-    end,
+-- // UI ЭЛЕМЕНТЫ
+Tabs.Farm:AddParagraph({
+    Title = "BABFT Gold Farm",
+    Content = "Автоматический сбор золота\nВерсия: 1.1 (Fluent UI)"
 })
 
-FarmTab:CreateSection("Настройки")
+Tabs.Farm:AddSection("Управление")
 
-local SpeedSlider = FarmTab:CreateSlider({
-    Name = "Задержка на этапах",
-    Info = "Меньше 2.5 сек ставить не рекомендуется",
+local FarmToggle = Tabs.Farm:AddToggle("GoldFarm", {
+    Title = "Активировать фарм золота",
+    Default = false
+})
+
+FarmToggle:OnChanged(function(Value)
+    getgenv().GoldFarmActive = Value
+    if Value then
+        Fluent:Notify({
+            Title = "Фарм запущен!",
+            Content = "Персонаж начал сбор золота",
+            SubContent = "Не закрывайте игру",
+            Duration = 4
+        })
+    else
+        Fluent:Notify({
+            Title = "Фарм остановлен",
+            Content = "Автоматизация завершена",
+            Duration = 3
+        })
+    end
+end)
+
+Tabs.Farm:AddSection("Настройки")
+
+local SpeedSlider = Tabs.Farm:AddSlider("FarmSpeed", {
+    Title = "Задержка на этапах",
+    Description = "Меньше 2.5 сек не рекомендуется",
+    Default = 2.5,
     Min = 1.5,
     Max = 5.0,
-    Default = 2.5,
-    Increment = 0.5,
-    ValueName = "сек.",
-    Flag = "SpeedSlider",
+    Rounding = 1,
     Callback = function(Value)
         getgenv().TimeBetweenStages = Value
-    end,
+    end
+})
+
+-- // Settings tab
+SaveManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetFolder("BABFT_GoldFarm")
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "BABFT Gold Farm",
+    Content = "Скрипт загружен успешно",
+    Duration = 5
 })
