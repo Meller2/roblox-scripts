@@ -1,110 +1,90 @@
--- // Fluent UI Test
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
+-- // ДИАГНОСТИКА: проверяем структуру Workspace BABFT
+print("[DIAG] Запуск диагностики BABFT...")
 
-local Window = Fluent:CreateWindow({
-    Title = "BABFT Gold Farm",
-    SubTitle = "by KiloUI",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Главная", Icon = "home" }),
-    Settings = Window:AddTab({ Title = "Настройки", Icon = "settings" })
-}
-
-local Options = Fluent.Options
-
--- // Notification
-Fluent:Notify({
-    Title = "Загрузка завершена",
-    Content = "Fluent UI успешно загружен",
-    SubContent = "by KiloUI",
-    Duration = 5
-})
-
--- // Paragraph
-Tabs.Main:AddParagraph({
-    Title = "Статус",
-    Content = "Скрипт готов к работе\nВерсия: 1.0"
-})
-
--- // Button
-Tabs.Main:AddButton({
-    Title = "Тест кнопка",
-    Description = "Нажми меня",
-    Callback = function()
-        Fluent:Notify({
-            Title = "Успех",
-            Content = "Кнопка нажата!",
-            Duration = 3
-        })
+-- // Проверяем BoatStages
+local boatStages = Workspace:FindFirstChild("BoatStages")
+if boatStages then
+    print("[DIAG] BoatStages найден!")
+    local normalStages = boatStages:FindFirstChild("NormalStages")
+    if normalStages then
+        print("[DIAG] NormalStages найден!")
+        print("[DIAG] Дочерние объекты NormalStages:")
+        for _, child in ipairs(normalStages:GetChildren()) do
+            print("  - " .. child.Name)
+        end
+        
+        -- // Проверяем первый этап
+        local stage1 = normalStages:FindFirstChild("CaveStage1")
+        if stage1 then
+            print("[DIAG] CaveStage1 найден!")
+            local darkness = stage1:FindFirstChild("DarknessPart")
+            if darkness then
+                print("[DIAG] DarknessPart найден! Position: " .. tostring(darkness.Position))
+            else
+                print("[DIAG] ОШИБКА: DarknessPart не найден в CaveStage1")
+            end
+        else
+            print("[DIAG] ОШИБКА: CaveStage1 не найден")
+        end
+        
+        -- // Проверяем TheEnd
+        local theEnd = normalStages:FindFirstChild("TheEnd")
+        if theEnd then
+            print("[DIAG] TheEnd найден!")
+            local chest = theEnd:FindFirstChild("GoldenChest")
+            if chest then
+                print("[DIAG] GoldenChest найден!")
+                local trigger = chest:FindFirstChild("Trigger")
+                if trigger then
+                    print("[DIAG] Trigger найден! Position: " .. tostring(trigger.Position))
+                else
+                    print("[DIAG] ОШИБКА: Trigger не найден")
+                end
+            else
+                print("[DIAG] ОШИБКА: GoldenChest не найден")
+            end
+        else
+            print("[DIAG] ОШИБКА: TheEnd не найден")
+        end
+    else
+        print("[DIAG] ОШИБКА: NormalStages не найден в BoatStages")
+        print("[DIAG] Доступные папки в BoatStages:")
+        for _, child in ipairs(boatStages:GetChildren()) do
+            print("  - " .. child.Name)
+        end
     end
-})
-
--- // Toggle
-local Toggle = Tabs.Main:AddToggle("AutoFarm", {Title = "Автофарм", Default = false})
-
-Toggle:OnChanged(function()
-    print("Автофарм:", Options.AutoFarm.Value)
-end)
-
--- // Slider
-local Slider = Tabs.Main:AddSlider("Speed", {
-    Title = "Скорость",
-    Description = "Скорость фарма",
-    Default = 50,
-    Min = 0,
-    Max = 100,
-    Rounding = 0,
-    Callback = function(Value)
-        print("Скорость:", Value)
+else
+    print("[DIAG] ОШИБКА: BoatStages не найден в Workspace!")
+    print("[DIAG] Доступные объекты в Workspace:")
+    for _, child in ipairs(Workspace:GetChildren()) do
+        if child:IsA("Folder") or child:IsA("Model") then
+            print("  - " .. child.Name .. " (" .. child.ClassName .. ")")
+        end
     end
-})
+end
 
--- // Dropdown
-local Dropdown = Tabs.Main:AddDropdown("Weapon", {
-    Title = "Оружие",
-    Values = {"Меч", "Лук", "Посох", "Кинжал"},
-    Multi = false,
-    Default = 1,
-})
-
-Dropdown:SetValue("Меч")
-
-Dropdown:OnChanged(function(Value)
-    print("Оружие:", Value)
-end)
-
--- // Keybind
-local Keybind = Tabs.Main:AddKeybind("ToggleKey", {
-    Title = "Клавиша",
-    Mode = "Toggle",
-    Default = "RightShift",
-    Callback = function(Value)
-        print("Клавиша:", Value)
+-- // Проверяем персонажа
+local character = LocalPlayer.Character
+if character then
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        print("[DIAG] HumanoidRootPart найден! Position: " .. tostring(hrp.Position))
+    else
+        print("[DIAG] ОШИБКА: HumanoidRootPart не найден")
     end
-})
+else
+    print("[DIAG] ОШИБКА: Character не найден")
+end
 
--- // Colorpicker
-local Colorpicker = Tabs.Main:AddColorpicker("AccentColor", {
-    Title = "Цвет акцента",
-    Default = Color3.fromRGB(240, 165, 0)
-})
+-- // Проверяем firetouchinterest
+if firetouchinterest then
+    print("[DIAG] firetouchinterest доступен")
+else
+    print("[DIAG] ОШИБКА: firetouchinterest НЕ доступен в этом executor!")
+end
 
-Colorpicker:OnChanged(function()
-    print("Цвет:", Colorpicker.Value)
-end)
-
--- // Settings tab
-Tabs.Settings:AddParagraph({
-    Title = "Настройки",
-    Content = "Здесь будут настройки скрипта"
-})
-
-Window:SelectTab(1)
-
-print("[Fluent] UI загружен успешно!")
+print("[DIAG] Диагностика завершена")
