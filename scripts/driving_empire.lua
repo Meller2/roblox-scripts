@@ -1,23 +1,29 @@
--- // Driving Empire Auto Farm v4.1
+-- // Driving Empire Auto Farm v5
 -- // Реальная логика на основе RemoteEvents
 
-print("[DE v4.1] Загрузка скрипта...")
+print("[DE v5] Загрузка скрипта...")
 
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v="..os.time()))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/WindUI.lua?v="..os.time()))()
 
--- Фикс __namecall для корректной работы методов вкладок в Solara
-if Fluent and Fluent.Elements and Fluent.Elements.__namecall then
-    local Elements = Fluent.Elements
-    Elements.__namecall = function(a, b, ...)
-        if type(a) == "table" and type(b) == "string" then
-            return Elements[b](a, ...)
-        elseif type(b) == "table" and type(a) == "string" then
-            return Elements[a](b, ...)
-        end
-        return Elements[b](a, ...)
-    end
-end
+local Window = WindUI:CreateWindow({
+    Title = "Driving Empire v5",
+    Folder = "KiloUI",
+    Icon = "car",
+    NewElements = true,
+    OpenButton = {
+        Enabled = false,
+    }
+})
 
+local FarmTab = Window:Tab({ Title = "Автофарм", Icon = "coins" })
+local RaceTab = Window:Tab({ Title = "Гонки", Icon = "flag" })
+local TeleportTab = Window:Tab({ Title = "Телепорт", Icon = "map-pin" })
+local VehicleTab = Window:Tab({ Title = "Машина", Icon = "car" })
+local QuestTab = Window:Tab({ Title = "Квесты", Icon = "scroll" })
+local StatsTab = Window:Tab({ Title = "Статы", Icon = "bar-chart-3" })
+local LogTab = Window:Tab({ Title = "Логи", Icon = "scroll-text" })
+
+-- // СЕРВИСЫ
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,39 +31,6 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-
-local Window = Fluent:CreateWindow({
-    Title = "Driving Empire",
-    SubTitle = "by KiloUI v4.1",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
-
-local Tabs = {
-    Farm = Window:AddTab({ Title = "Автофарм", Icon = "coins" }),
-    Race = Window:AddTab({ Title = "Гонки", Icon = "flag" }),
-    Teleport = Window:AddTab({ Title = "Телепорт", Icon = "map-pin" }),
-    Vehicle = Window:AddTab({ Title = "Машина", Icon = "car" }),
-    Quest = Window:AddTab({ Title = "Квесты", Icon = "scroll" }),
-    Stats = Window:AddTab({ Title = "Статы", Icon = "bar-chart-3" }),
-    Log = Window:AddTab({ Title = "Логи", Icon = "scroll-text" })
-}
-
--- Прямые методы для обхода __namecall в Solara
-for _, tab in pairs(Tabs) do
-    if type(tab) == "table" then
-        for name, method in pairs(Fluent.Elements) do
-            if type(method) == "function" and name:sub(1, 3) == "Add" then
-                tab[name] = function(...)
-                    return method(tab, ...)
-                end
-            end
-        end
-    end
-end
 
 -- // Логирование
 local logBuffer = {}
@@ -432,344 +405,338 @@ end
 -- // ============ UI ELEMENTS ============
 
 local uiSuccess, uiErr = pcall(function()
+    -- // Farm Tab
+    FarmTab:Paragraph({
+        Title = "Driving Empire Farm v5",
+        Desc = "Автоматизация через RemoteEvents\nby KiloUI"
+    })
 
--- // Farm Tab
-Tabs.Farm:AddParagraph({
-    Title = "Driving Empire Farm v4.1",
-    Content = "Автоматизация через RemoteEvents\nby KiloUI"
-})
+    FarmTab:Section({ Title = "Авто-гонки" })
 
-Tabs.Farm:AddSection("Авто-гонки")
-
-local RaceTypeDropdown = Tabs.Farm:AddDropdown("RaceType", {
-    Title = "Тип гонки",
-    Values = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"},
-    Multi = false,
-    Default = 1,
-})
-
-RaceTypeDropdown:SetValue("Circuit")
-
-RaceTypeDropdown:OnChanged(function(value)
-    autoRaceType = value
-    log("Тип гонки изменён: " .. value)
-end)
-
-local AutoRaceToggle = Tabs.Farm:AddToggle("AutoRace", {
-    Title = "Авто-гонки",
-    Default = false
-})
-
-AutoRaceToggle:OnChanged(function(v)
-    if v then
-        startAutoRace()
-    else
-        stopAutoRace()
-    end
-end)
-
-Tabs.Farm:AddButton({
-    Title = "Быстрый рестарт",
-    Description = "Перезапустить текущую гонку",
-    Callback = function()
-        quickRestartRace()
-    end
-})
-
-Tabs.Farm:AddButton({
-    Title = "Забрать награды",
-    Description = "Получить награды за гонку",
-    Callback = function()
-        claimRaceRewards()
-    end
-})
-
-Tabs.Farm:AddSection("Авто-доставки")
-
-local AutoDeliveryToggle = Tabs.Farm:AddToggle("AutoDelivery", {
-    Title = "Авто-доставки",
-    Default = false
-})
-
-AutoDeliveryToggle:OnChanged(function(v)
-    if v then
-        startAutoDelivery()
-    else
-        stopAutoDelivery()
-    end
-end)
-
-Tabs.Farm:AddSection("Сбор денег")
-
-Tabs.Farm:AddButton({
-    Title = "Собрать деньги рядом",
-    Description = "Собрать все деньги в радиусе 50м",
-    Callback = function()
-        collectNearbyCash()
-    end
-})
-
--- // Race Tab
-Tabs.Race:AddParagraph({
-    Title = "Управление гонками",
-    Content = "Ручное управление гонками"
-})
-
-Tabs.Race:AddSection("Встать в очередь")
-
-local raceTypes = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"}
-for _, rt in ipairs(raceTypes) do
-    Tabs.Race:AddButton({
-        Title = rt .. " Race",
-        Description = "Встать в очередь на " .. rt,
-        Callback = function()
-            joinRaceQueue(rt)
+    FarmTab:Dropdown({
+        Title = "Тип гонки",
+        Values = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"},
+        Value = "Circuit",
+        Callback = function(value)
+            autoRaceType = value
+            log("Тип гонки изменён: " .. value)
         end
     })
-end
 
-Tabs.Race:AddSection("Управление")
-
-Tabs.Race:AddButton({
-    Title = "Выйти из очереди",
-    Callback = function()
-        leaveRaceQueue()
-    end
-})
-
-Tabs.Race:AddButton({
-    Title = "Быстрый рестарт",
-    Callback = function()
-        quickRestartRace()
-    end
-})
-
-Tabs.Race:AddButton({
-    Title = "Забрать награды",
-    Callback = function()
-        claimRaceRewards()
-    end
-})
-
-Tabs.Race:AddSection("Лидерборд")
-
-Tabs.Race:AddButton({
-    Title = "Обновить лидерборд",
-    Callback = function()
-        local data = getRaceLeaderboard()
-        if data then
-            log("Лидерборд: " .. tostring(data))
-        end
-    end
-})
-
--- // Teleport Tab
-Tabs.Teleport:AddParagraph({
-    Title = "Телепортация",
-    Content = "Быстрое перемещение по карте"
-})
-
-Tabs.Teleport:AddSection("Дилершипы")
-
-local dealerships = {
-    {"Cars & Motorcycles", "CarDealership"},
-    {"Boats", "BoatDealership"},
-    {"Planes & Helicopters", "PlaneDealership"}
-}
-
-for _, d in ipairs(dealerships) do
-    Tabs.Teleport:AddButton({
-        Title = d[1],
-        Callback = function()
-            teleportToDestination(d[2])
-        end
-    })
-end
-
-Tabs.Teleport:AddSection("Гонки")
-
-local raceTeleports = {
-    {"Circuit Race", "CircuitRace"},
-    {"Cross Country", "CrossCountry"},
-    {"Highway Race", "HighwayRace"},
-    {"Drag Race", "DragRace"}
-}
-
-for _, r in ipairs(raceTeleports) do
-    Tabs.Teleport:AddButton({
-        Title = r[1],
-        Callback = function()
-            teleportToDestination(r[2])
-        end
-    })
-end
-
-Tabs.Teleport:AddSection("Ручной телепорт")
-
-local XInput = Tabs.Teleport:AddInput("TeleX", {
-    Title = "X координата",
-    Default = "0",
-    Placeholder = "X",
-    Numeric = true,
-    Callback = function() end
-})
-
-local YInput = Tabs.Teleport:AddInput("TeleY", {
-    Title = "Y координата",
-    Default = "50",
-    Placeholder = "Y",
-    Numeric = true,
-    Callback = function() end
-})
-
-local ZInput = Tabs.Teleport:AddInput("TeleZ", {
-    Title = "Z координата",
-    Default = "0",
-    Placeholder = "Z",
-    Numeric = true,
-    Callback = function() end
-})
-
-Tabs.Teleport:AddButton({
-    Title = "Телепортироваться",
-    Description = "К координатам X, Y, Z",
-    Callback = function()
-        local x = tonumber(XInput.Value) or 0
-        local y = tonumber(YInput.Value) or 50
-        local z = tonumber(ZInput.Value) or 0
-        teleportToCoords(x, y, z)
-    end
-})
-
--- // Vehicle Tab
-Tabs.Vehicle:AddParagraph({
-    Title = "Управление машиной",
-    Content = "Функции для транспорта"
-})
-
-Tabs.Vehicle:AddSection("Спавн")
-
-Tabs.Vehicle:AddButton({
-    Title = "Заспавнить стартовую машину",
-    Callback = function()
-        spawnStarterCar()
-    end
-})
-
-Tabs.Vehicle:AddSection("Информация")
-
-Tabs.Vehicle:AddButton({
-    Title = "Получить статы машины",
-    Callback = function()
-        local stats = getVehicleStats()
-        if stats then
-            log("Статы машины: " .. tostring(stats))
-        end
-    end
-})
-
-Tabs.Vehicle:AddButton({
-    Title = "Выйти из машины",
-    Callback = function()
-        local char = LocalPlayer.Character
-        if char then
-            local seat = char:FindFirstChildOfClass("Seat") or char:FindFirstChildOfClass("VehicleSeat")
-            if seat then
-                seat:Sit(nil)
-                log("Вышел из машины")
+    FarmTab:Toggle({
+        Title = "Авто-гонки",
+        Value = false,
+        Callback = function(v)
+            if v then
+                startAutoRace()
+            else
+                stopAutoRace()
             end
         end
+    })
+
+    FarmTab:Button({
+        Title = "Быстрый рестарт",
+        Desc = "Перезапустить текущую гонку",
+        Callback = function()
+            quickRestartRace()
+        end
+    })
+
+    FarmTab:Button({
+        Title = "Забрать награды",
+        Desc = "Получить награды за гонку",
+        Callback = function()
+            claimRaceRewards()
+        end
+    })
+
+    FarmTab:Section({ Title = "Авто-доставки" })
+
+    FarmTab:Toggle({
+        Title = "Авто-доставки",
+        Value = false,
+        Callback = function(v)
+            if v then
+                startAutoDelivery()
+            else
+                stopAutoDelivery()
+            end
+        end
+    })
+
+    FarmTab:Section({ Title = "Сбор денег" })
+
+    FarmTab:Button({
+        Title = "Собрать деньги рядом",
+        Desc = "Собрать все деньги в радиусе 50м",
+        Callback = function()
+            collectNearbyCash()
+        end
+    })
+
+    -- // Race Tab
+    RaceTab:Paragraph({
+        Title = "Управление гонками",
+        Desc = "Ручное управление гонками"
+    })
+
+    RaceTab:Section({ Title = "Встать в очередь" })
+
+    local raceTypes = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"}
+    for _, rt in ipairs(raceTypes) do
+        RaceTab:Button({
+            Title = rt .. " Race",
+            Desc = "Встать в очередь на " .. rt,
+            Callback = function()
+                joinRaceQueue(rt)
+            end
+        })
     end
-})
 
--- // Quest Tab
-Tabs.Quest:AddParagraph({
-    Title = "Квесты",
-    Content = "Управление квестами"
-})
+    RaceTab:Section({ Title = "Управление" })
 
-Tabs.Quest:AddSection("Награды")
+    RaceTab:Button({
+        Title = "Выйти из очереди",
+        Callback = function()
+            leaveRaceQueue()
+        end
+    })
 
-Tabs.Quest:AddButton({
-    Title = "Забрать все награды",
-    Description = "Получить награды за завершённые квесты",
-    Callback = function()
-        claimAllQuestRewards()
+    RaceTab:Button({
+        Title = "Быстрый рестарт",
+        Callback = function()
+            quickRestartRace()
+        end
+    })
+
+    RaceTab:Button({
+        Title = "Забрать награды",
+        Callback = function()
+            claimRaceRewards()
+        end
+    })
+
+    RaceTab:Section({ Title = "Лидерборд" })
+
+    RaceTab:Button({
+        Title = "Обновить лидерборд",
+        Callback = function()
+            local data = getRaceLeaderboard()
+            if data then
+                log("Лидерборд: " .. tostring(data))
+            end
+        end
+    })
+
+    -- // Teleport Tab
+    TeleportTab:Paragraph({
+        Title = "Телепортация",
+        Desc = "Быстрое перемещение по карте"
+    })
+
+    TeleportTab:Section({ Title = "Дилершипы" })
+
+    local dealerships = {
+        {"Cars & Motorcycles", "CarDealership"},
+        {"Boats", "BoatDealership"},
+        {"Planes & Helicopters", "PlaneDealership"}
+    }
+
+    for _, d in ipairs(dealerships) do
+        TeleportTab:Button({
+            Title = d[1],
+            Callback = function()
+                teleportToDestination(d[2])
+            end
+        })
     end
-})
 
--- // Stats Tab
-Tabs.Stats:AddParagraph({
-    Title = "Статистика",
-    Content = "Данные аккаунта и прогресс"
-})
+    TeleportTab:Section({ Title = "Гонки" })
 
-Tabs.Stats:AddSection("Данные игрока")
+    local raceTeleports = {
+        {"Circuit Race", "CircuitRace"},
+        {"Cross Country", "CrossCountry"},
+        {"Highway Race", "HighwayRace"},
+        {"Drag Race", "DragRace"}
+    }
 
-Tabs.Stats:AddButton({
-    Title = "Обновить данные",
-    Description = "Загрузить данные с сервера",
-    Callback = function()
-        local data = getPlayerData()
-        if data then
-            log("Данные получены: " .. tostring(data))
-            if type(data) == "table" then
-                for k, v in pairs(data) do
-                    log("  " .. tostring(k) .. ": " .. tostring(v))
+    for _, r in ipairs(raceTeleports) do
+        TeleportTab:Button({
+            Title = r[1],
+            Callback = function()
+                teleportToDestination(r[2])
+            end
+        })
+    end
+
+    TeleportTab:Section({ Title = "Ручной телепорт" })
+
+    local teleX, teleY, teleZ = 0, 50, 0
+
+    TeleportTab:Input({
+        Title = "X координата",
+        Value = "0",
+        Placeholder = "X",
+        Callback = function(value)
+            teleX = tonumber(value) or 0
+        end
+    })
+
+    TeleportTab:Input({
+        Title = "Y координата",
+        Value = "50",
+        Placeholder = "Y",
+        Callback = function(value)
+            teleY = tonumber(value) or 50
+        end
+    })
+
+    TeleportTab:Input({
+        Title = "Z координата",
+        Value = "0",
+        Placeholder = "Z",
+        Callback = function(value)
+            teleZ = tonumber(value) or 0
+        end
+    })
+
+    TeleportTab:Button({
+        Title = "Телепортироваться",
+        Desc = "К координатам X, Y, Z",
+        Callback = function()
+            teleportToCoords(teleX, teleY, teleZ)
+        end
+    })
+
+    -- // Vehicle Tab
+    VehicleTab:Paragraph({
+        Title = "Управление машиной",
+        Desc = "Функции для транспорта"
+    })
+
+    VehicleTab:Section({ Title = "Спавн" })
+
+    VehicleTab:Button({
+        Title = "Заспавнить стартовую машину",
+        Callback = function()
+            spawnStarterCar()
+        end
+    })
+
+    VehicleTab:Section({ Title = "Информация" })
+
+    VehicleTab:Button({
+        Title = "Получить статы машины",
+        Callback = function()
+            local stats = getVehicleStats()
+            if stats then
+                log("Статы машины: " .. tostring(stats))
+            end
+        end
+    })
+
+    VehicleTab:Button({
+        Title = "Выйти из машины",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if char then
+                local seat = char:FindFirstChildOfClass("Seat") or char:FindFirstChildOfClass("VehicleSeat")
+                if seat then
+                    seat:Sit(nil)
+                    log("Вышел из машины")
                 end
             end
         end
-    end
-})
+    })
 
-Tabs.Stats:AddButton({
-    Title = "Обновить статы",
-    Callback = function()
-        local stats = getPlayerStats()
-        if stats then
-            log("Статы: " .. tostring(stats))
+    -- // Quest Tab
+    QuestTab:Paragraph({
+        Title = "Квесты",
+        Desc = "Управление квестами"
+    })
+
+    QuestTab:Section({ Title = "Награды" })
+
+    QuestTab:Button({
+        Title = "Забрать все награды",
+        Desc = "Получить награды за завершённые квесты",
+        Callback = function()
+            claimAllQuestRewards()
         end
-    end
-})
-
-Tabs.Stats:AddSection("leaderstats")
-
-local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-if leaderstats then
-    local statsText = ""
-    for _, stat in ipairs(leaderstats:GetChildren()) do
-        statsText = statsText .. stat.Name .. ": " .. tostring(stat.Value) .. "\n"
-    end
-    Tabs.Stats:AddParagraph({
-        Title = "Текущие статы",
-        Content = statsText
     })
-else
-    Tabs.Stats:AddParagraph({
-        Title = "Статы",
-        Content = "leaderstats не найден"
+
+    -- // Stats Tab
+    StatsTab:Paragraph({
+        Title = "Статистика",
+        Desc = "Данные аккаунта и прогресс"
     })
-end
 
-Tabs.Stats:AddSection("Статистика фарма")
+    StatsTab:Section({ Title = "Данные игрока" })
 
-Tabs.Stats:AddParagraph({
-    Title = "Прогресс",
-    Content = "Гонок завершено: " .. raceCount .. "\nВсего заработано: " .. totalEarnings
-})
+    StatsTab:Button({
+        Title = "Обновить данные",
+        Desc = "Загрузить данные с сервера",
+        Callback = function()
+            local data = getPlayerData()
+            if data then
+                log("Данные получены: " .. tostring(data))
+                if type(data) == "table" then
+                    for k, v in pairs(data) do
+                        log("  " .. tostring(k) .. ": " .. tostring(v))
+                    end
+                end
+            end
+        end
+    })
 
--- // Log Tab
-Tabs.Log:AddParagraph({
-    Title = "Лог событий",
-    Content = "Все действия скрипта"
-})
+    StatsTab:Button({
+        Title = "Обновить статы",
+        Callback = function()
+            local stats = getPlayerStats()
+            if stats then
+                log("Статы: " .. tostring(stats))
+            end
+        end
+    })
 
+    StatsTab:Section({ Title = "leaderstats" })
+
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if leaderstats then
+        local statsText = ""
+        for _, stat in ipairs(leaderstats:GetChildren()) do
+            statsText = statsText .. stat.Name .. ": " .. tostring(stat.Value) .. "\n"
+        end
+        StatsTab:Paragraph({
+            Title = "Текущие статы",
+            Desc = statsText
+        })
+    else
+        StatsTab:Paragraph({
+            Title = "Статы",
+            Desc = "leaderstats не найден"
+        })
+    end
+
+    StatsTab:Section({ Title = "Статистика фарма" })
+
+    StatsTab:Paragraph({
+        Title = "Прогресс",
+        Desc = "Гонок завершено: " .. raceCount .. "\nВсего заработано: " .. totalEarnings
+    })
+
+    -- // Log Tab
+    LogTab:Paragraph({
+        Title = "Лог событий",
+        Desc = "Все действия скрипта"
+    })
 end)
 
 if not uiSuccess then
-    warn("[DE v4.1] UI ERROR: " .. tostring(uiErr))
+    warn("[DE v5] UI ERROR: " .. tostring(uiErr))
     log("UI ERROR: " .. tostring(uiErr))
-    Fluent:Notify({
+    WindUI:Notify({
         Title = "UI Error",
         Content = tostring(uiErr),
         Duration = 10
@@ -778,14 +745,11 @@ end
 
 -- // ============ STARTUP ============
 
-Window:SelectTab(1)
-
-Fluent:Notify({
-    Title = "Driving Empire v4.1",
+WindUI:Notify({
+    Title = "Driving Empire v5",
     Content = "Скрипт загружен успешно",
-    SubContent = "RemoteEvents активны",
     Duration = 5
 })
 
-log("Скрипт v4.1 загружен")
+log("Скрипт v5 загружен")
 log("RemoteEvents найдены: " .. #Remotes:GetChildren())

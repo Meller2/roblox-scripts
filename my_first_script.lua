@@ -1,4 +1,4 @@
--- // KiloUI Script Hub v2
+-- // KiloUI Script Hub v3
 -- // Универсальный хаб с автоопределением плейса
 
 local Players = game:GetService("Players")
@@ -8,8 +8,8 @@ local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local GameName = ""
 
-print("[KiloUI Hub v2] Запуск...")
-print("[KiloUI Hub v2] Place ID: " .. PlaceId)
+print("[KiloUI Hub v3] Запуск...")
+print("[KiloUI Hub v3] Place ID: " .. PlaceId)
 
 -- // Маппинг плейсов
 local GameScripts = {
@@ -28,33 +28,33 @@ local GameInfo = GameScripts[PlaceId]
 
 if GameInfo then
     GameName = GameInfo.Name
-    print("[KiloUI Hub v2] Обнаружена игра: " .. GameName)
-    print("[KiloUI Hub v2] Загрузка скрипта...")
-    
+    print("[KiloUI Hub v3] Обнаружена игра: " .. GameName)
+    print("[KiloUI Hub v3] Загрузка скрипта...")
+
     local success, err = pcall(function()
         local scriptUrl = GameInfo.Script .. "?v=" .. tostring(os.time())
-        print("[KiloUI Hub v2] URL: " .. scriptUrl)
+        print("[KiloUI Hub v3] URL: " .. scriptUrl)
         local scriptContent = game:HttpGet(scriptUrl, true)
         if type(scriptContent) ~= "string" or scriptContent == "" then
-            warn("[KiloUI Hub v2] game:HttpGet вернул пустой/неверный ответ: " .. tostring(scriptContent))
+            warn("[KiloUI Hub v3] game:HttpGet вернул пустой/неверный ответ: " .. tostring(scriptContent))
             return
         end
-        print("[KiloUI Hub v2] Получено байт: " .. tostring(#scriptContent))
+        print("[KiloUI Hub v3] Получено байт: " .. tostring(#scriptContent))
         local func, loadErr = loadstring(scriptContent)
         if not func then
-            warn("[KiloUI Hub v2] Синтаксическая ошибка в скрипте: " .. tostring(loadErr))
-            warn("[KiloUI Hub v2] Первые 300 символов:\n" .. scriptContent:sub(1, 300))
+            warn("[KiloUI Hub v3] Синтаксическая ошибка в скрипте: " .. tostring(loadErr))
+            warn("[KiloUI Hub v3] Первые 300 символов:\n" .. scriptContent:sub(1, 300))
             return
         end
         func()
     end)
-    
+
     if not success then
-        warn("[KiloUI Hub v2] Ошибка загрузки скрипта: " .. tostring(err))
+        warn("[KiloUI Hub v3] Ошибка загрузки скрипта: " .. tostring(err))
     end
 else
     -- // Игра не поддерживается - показываем уведомление
-    print("[KiloUI Hub v2] Игра не поддерживается: Place ID " .. PlaceId)
+    print("[KiloUI Hub v3] Игра не поддерживается: Place ID " .. PlaceId)
     
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "KiloUI_Hub_Error"
