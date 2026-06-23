@@ -1,7 +1,7 @@
--- // Driving Empire Auto Farm v4
+-- // Driving Empire Auto Farm v4.1
 -- // Реальная логика на основе RemoteEvents
 
-print("[DE v4] Загрузка скрипта...")
+print("[DE v4.1] Загрузка скрипта...")
 
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v="..os.time()))()
 
@@ -28,7 +28,7 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local Window = Fluent:CreateWindow({
     Title = "Driving Empire",
-    SubTitle = "by KiloUI v4",
+    SubTitle = "by KiloUI v4.1",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = false,
@@ -435,7 +435,7 @@ local uiSuccess, uiErr = pcall(function()
 
 -- // Farm Tab
 Tabs.Farm:AddParagraph({
-    Title = "Driving Empire Farm v4",
+    Title = "Driving Empire Farm v4.1",
     Content = "Автоматизация через RemoteEvents\nby KiloUI"
 })
 
@@ -767,7 +767,7 @@ Tabs.Log:AddParagraph({
 end)
 
 if not uiSuccess then
-    warn("[DE v4] UI ERROR: " .. tostring(uiErr))
+    warn("[DE v4.1] UI ERROR: " .. tostring(uiErr))
     log("UI ERROR: " .. tostring(uiErr))
     Fluent:Notify({
         Title = "UI Error",
@@ -781,11 +781,11 @@ end
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Driving Empire v4",
+    Title = "Driving Empire v4.1",
     Content = "Скрипт загружен успешно",
     SubContent = "RemoteEvents активны",
     Duration = 5
 })
 
-log("Скрипт v4 загружен")
+log("Скрипт v4.1 загружен")
 log("RemoteEvents найдены: " .. #Remotes:GetChildren())

@@ -48,7 +48,7 @@ roblox-scripts/
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/my_first_script.lua?v="..os.time()))()
 ```
 - `?v=` + `os.time()` обязателен для обхода кэша Solara/GitHub raw
-- Версии скриптов обновляются в заголовках (DE — v4, BABFT — v4, Hub — v2)
+- Версии скриптов обновляются в заголовках (DE — v4.1, BABFT — v4.1, Hub — v2)
 
 ## UI Library: Fluent
 Используется **Fluent** от dawid-scripts (GitHub: dawid-scripts/Fluent).
