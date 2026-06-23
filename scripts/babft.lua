@@ -1,20 +1,25 @@
--- // BABFT Gold Farm Script
+-- // BABFT Gold Farm Script v4
 -- // Загружается только в Build a Boat for Treasure (Place ID: 189707)
 
-print("[BABFT] Загрузка скрипта фарма золота...")
+print("[BABFT v4] Загрузка скрипта фарма золота...")
 
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v="..os.time()))()
 
 -- Фикс __namecall для корректной работы методов вкладок в Solara
 if Fluent and Fluent.Elements and Fluent.Elements.__namecall then
     local Elements = Fluent.Elements
-    Elements.__namecall = function(self, key, ...)
-        return Elements[key](self, ...)
+    Elements.__namecall = function(a, b, ...)
+        if type(a) == "table" and type(b) == "string" then
+            return Elements[b](a, ...)
+        elseif type(b) == "table" and type(a) == "string" then
+            return Elements[a](b, ...)
+        end
+        return Elements[b](a, ...)
     end
 end
 
 local Window = Fluent:CreateWindow({
-    Title = "BABFT Gold Farm",
+    Title = "BABFT Gold Farm v4",
     SubTitle = "by KiloUI",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -186,9 +191,10 @@ task.spawn(function()
 end)
 
 -- // UI ЭЛЕМЕНТЫ
+local uiSuccess, uiErr = pcall(function()
 Tabs.Farm:AddParagraph({
     Title = "BABFT Gold Farm",
-    Content = "Автоматический сбор золота\nВерсия: 1.2 (Fluent UI)"
+    Content = "Автоматический сбор золота\nВерсия: v4 (Fluent UI)"
 })
 
 Tabs.Farm:AddSection("Управление")
@@ -231,10 +237,22 @@ local SpeedSlider = Tabs.Farm:AddSlider("FarmSpeed", {
     end
 })
 
+end)
+
+if not uiSuccess then
+    warn("[BABFT v4] UI ERROR: " .. tostring(uiErr))
+    log("UI ERROR: " .. tostring(uiErr))
+    Fluent:Notify({
+        Title = "UI Error",
+        Content = tostring(uiErr),
+        Duration = 10
+    })
+end
+
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "BABFT Gold Farm",
+    Title = "BABFT Gold Farm v4",
     Content = "Скрипт загружен успешно",
     Duration = 5
 })

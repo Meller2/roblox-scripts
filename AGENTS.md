@@ -45,8 +45,10 @@ roblox-scripts/
 
 ### Команда запуска
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/my_first_script.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/my_first_script.lua?v="..os.time()))()
 ```
+- `?v=` + `os.time()` обязателен для обхода кэша Solara/GitHub raw
+- Версии скриптов обновляются в заголовках (DE — v4, BABFT — v4, Hub — v2)
 
 ## UI Library: Fluent
 Используется **Fluent** от dawid-scripts (GitHub: dawid-scripts/Fluent).
@@ -56,7 +58,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-script
 
 ### API Fluent
 ```lua
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v="..os.time()))()
 
 local Window = Fluent:CreateWindow({
     Title = "Название",

@@ -1,15 +1,20 @@
--- // Driving Empire Auto Farm v3
+-- // Driving Empire Auto Farm v4
 -- // Реальная логика на основе RemoteEvents
 
-print("[DE v3] Загрузка скрипта...")
+print("[DE v4] Загрузка скрипта...")
 
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v="..os.time()))()
 
 -- Фикс __namecall для корректной работы методов вкладок в Solara
 if Fluent and Fluent.Elements and Fluent.Elements.__namecall then
     local Elements = Fluent.Elements
-    Elements.__namecall = function(self, key, ...)
-        return Elements[key](self, ...)
+    Elements.__namecall = function(a, b, ...)
+        if type(a) == "table" and type(b) == "string" then
+            return Elements[b](a, ...)
+        elseif type(b) == "table" and type(a) == "string" then
+            return Elements[a](b, ...)
+        end
+        return Elements[b](a, ...)
     end
 end
 
@@ -23,7 +28,7 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local Window = Fluent:CreateWindow({
     Title = "Driving Empire",
-    SubTitle = "by KiloUI v3",
+    SubTitle = "by KiloUI v4",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = false,
@@ -413,9 +418,11 @@ end
 
 -- // ============ UI ELEMENTS ============
 
+local uiSuccess, uiErr = pcall(function()
+
 -- // Farm Tab
 Tabs.Farm:AddParagraph({
-    Title = "Driving Empire Farm v3",
+    Title = "Driving Empire Farm v4",
     Content = "Автоматизация через RemoteEvents\nby KiloUI"
 })
 
@@ -744,16 +751,28 @@ Tabs.Log:AddParagraph({
     Content = "Все действия скрипта"
 })
 
+end)
+
+if not uiSuccess then
+    warn("[DE v4] UI ERROR: " .. tostring(uiErr))
+    log("UI ERROR: " .. tostring(uiErr))
+    Fluent:Notify({
+        Title = "UI Error",
+        Content = tostring(uiErr),
+        Duration = 10
+    })
+end
+
 -- // ============ STARTUP ============
 
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Driving Empire v3",
+    Title = "Driving Empire v4",
     Content = "Скрипт загружен успешно",
     SubContent = "RemoteEvents активны",
     Duration = 5
 })
 
-log("Скрипт v3 загружен")
+log("Скрипт v4 загружен")
 log("RemoteEvents найдены: " .. #Remotes:GetChildren())
