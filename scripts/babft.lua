@@ -3,7 +3,7 @@
 
 print("[BABFT] Загрузка скрипта фарма золота...")
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua", true))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "BABFT Gold Farm",
