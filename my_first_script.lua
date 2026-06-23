@@ -1,16 +1,7 @@
 -- // BABFT Gold Farm с диагностикой
 print("[BABFT] Загрузка Fluent UI...")
 
-local Fluent
-local success, err = pcall(function()
-    Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
-end)
-
-if not success or not Fluent then
-    print("[BABFT] Ошибка загрузки Fluent: " .. tostring(err))
-    -- Fallback на официальный URL
-    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-end
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua", true))()
 
 print("[BABFT] Fluent загружен: " .. tostring(Fluent))
 
