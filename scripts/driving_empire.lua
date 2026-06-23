@@ -1,12 +1,12 @@
--- // Driving Empire Auto Farm v5.1
+-- // Driving Empire Auto Farm v5.2
 -- // Реальная логика на основе RemoteEvents
 
-print("[DE v5.1] Загрузка скрипта...")
+print("[DE v5.2] Загрузка скрипта...")
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/WindUI.lua?v="..os.time()))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Driving Empire v5.1",
+    Title = "Driving Empire v5.2",
     Folder = "KiloUI",
     Icon = "car",
     NewElements = true,
@@ -404,11 +404,11 @@ end
 
 -- // ============ UI ELEMENTS ============
 
-local uiSuccess, uiErr = pcall(function()
-    task.wait(0.1) -- даём WindUI создать пустые страницы вкладок перед добавлением элементов
-    -- // Farm Tab
-    FarmTab:Paragraph({
-        Title = "Driving Empire Farm v5.1",
+task.spawn(function()
+    local uiSuccess, uiErr = pcall(function()
+        -- // Farm Tab
+        FarmTab:Paragraph({
+            Title = "Driving Empire Farm v5.2",
         Desc = "Автоматизация через RemoteEvents\nby KiloUI"
     })
 
@@ -732,10 +732,25 @@ local uiSuccess, uiErr = pcall(function()
         Title = "Лог событий",
         Desc = "Все действия скрипта"
     })
+
+    -- // Диагностика: сколько детей в каждой вкладке
+    local function countTabChildren(tab)
+        local cf = tab and tab.UIElements and tab.UIElements.ContainerFrame
+        return cf and #cf:GetChildren() or 0
+    end
+    local diag = {}
+    for _, t in ipairs({FarmTab, RaceTab, TeleportTab, VehicleTab, QuestTab, StatsTab, LogTab}) do
+        table.insert(diag, t.Title .. ": " .. countTabChildren(t))
+    end
+    WindUI:Notify({
+        Title = "DE v5.2 Debug",
+        Content = table.concat(diag, " | "),
+        Duration = 8
+    })
 end)
 
 if not uiSuccess then
-    warn("[DE v5.1] UI ERROR: " .. tostring(uiErr))
+    warn("[DE v5.2] UI ERROR: " .. tostring(uiErr))
     log("UI ERROR: " .. tostring(uiErr))
     WindUI:Notify({
         Title = "UI Error",
@@ -743,14 +758,15 @@ if not uiSuccess then
         Duration = 10
     })
 end
+end)
 
 -- // ============ STARTUP ============
 
 WindUI:Notify({
-    Title = "Driving Empire v5.1",
+    Title = "Driving Empire v5.2",
     Content = "Скрипт загружен успешно",
     Duration = 5
 })
 
-log("Скрипт v5.1 загружен")
+log("Скрипт v5.2 загружен")
 log("RemoteEvents найдены: " .. #Remotes:GetChildren())

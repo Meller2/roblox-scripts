@@ -1,12 +1,12 @@
--- // BABFT Gold Farm Script v5.1
+-- // BABFT Gold Farm Script v5.2
 -- // Загружается только в Build a Boat for Treasure (Place ID: 189707)
 
-print("[BABFT v5.1] Загрузка скрипта фарма золота...")
+print("[BABFT v5.2] Загрузка скрипта фарма золота...")
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/WindUI.lua?v="..os.time()))()
 
 local Window = WindUI:CreateWindow({
-    Title = "BABFT Gold Farm v5.1",
+    Title = "BABFT Gold Farm v5.2",
     Folder = "KiloUI",
     Icon = "coins",
     NewElements = true,
@@ -174,12 +174,12 @@ task.spawn(function()
 end)
 
 -- // UI ЭЛЕМЕНТЫ
-local uiSuccess, uiErr = pcall(function()
-    task.wait(0.1) -- даём WindUI создать пустые страницы вкладок перед добавлением элементов
-    FarmTab:Paragraph({
-        Title = "BABFT Gold Farm v5.1",
-        Desc = "Автоматический сбор золота\nВерсия: v5.1 (WindUI)"
-    })
+task.spawn(function()
+    local uiSuccess, uiErr = pcall(function()
+        FarmTab:Paragraph({
+            Title = "BABFT Gold Farm v5.2",
+            Desc = "Автоматический сбор золота\nВерсия: v5.2 (WindUI)"
+        })
 
     FarmTab:Section({ Title = "Управление" })
 
@@ -225,10 +225,25 @@ local uiSuccess, uiErr = pcall(function()
         Title = "Лог событий",
         Desc = "Все действия скрипта"
     })
+
+    -- // Диагностика: сколько детей в каждой вкладке
+    local function countTabChildren(tab)
+        local cf = tab and tab.UIElements and tab.UIElements.ContainerFrame
+        return cf and #cf:GetChildren() or 0
+    end
+    local diag = {}
+    for _, t in ipairs({FarmTab, LogTab}) do
+        table.insert(diag, t.Title .. ": " .. countTabChildren(t))
+    end
+    WindUI:Notify({
+        Title = "BABFT v5.2 Debug",
+        Content = table.concat(diag, " | "),
+        Duration = 8
+    })
 end)
 
 if not uiSuccess then
-    warn("[BABFT v5.1] UI ERROR: " .. tostring(uiErr))
+    warn("[BABFT v5.2] UI ERROR: " .. tostring(uiErr))
     log("UI ERROR: " .. tostring(uiErr))
     WindUI:Notify({
         Title = "UI Error",
@@ -236,9 +251,10 @@ if not uiSuccess then
         Duration = 10
     })
 end
+end)
 
 WindUI:Notify({
-    Title = "BABFT Gold Farm v5.1",
+    Title = "BABFT Gold Farm v5.2",
     Content = "Скрипт загружен успешно",
     Duration = 5
 })

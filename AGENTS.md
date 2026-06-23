@@ -28,7 +28,7 @@ roblox-scripts/
     KiloUI.lua              -- Старая кастомная UI библиотека (не используется)
   scripts/
     babft.lua               -- Build a Boat for Treasure (Gold Farm)
-    driving_empire.lua      -- Driving Empire (Auto Farm v5.1)
+    driving_empire.lua      -- Driving Empire (Auto Farm v5.2)
   my_first_script.lua       -- Универсальный хаб (автоопределение плейса)
   log_viewer.lua            -- Просмотрщик логов с копированием
   test_debug.lua            -- Диагностика структуры игры
@@ -49,7 +49,7 @@ roblox-scripts/
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/my_first_script.lua?v="..os.time()))()
 ```
 - `?v=` + `os.time()` обязателен для обхода кэша Solara/GitHub raw
-- Версии скриптов обновляются в заголовках (DE — v5.1, BABFT — v5.1, Hub — v3)
+- Версии скриптов обновляются в заголовках (DE — v5.2, BABFT — v5.2, Hub — v3)
 
 ## UI Library: WindUI
 Используется **WindUI** от Footagesus (GitHub: Footagesus/WindUI).
