@@ -1,12 +1,12 @@
 -- // Fluent UI Test
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua?v=" .. os.time()))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Meller2/roblox-scripts/master/lib/Fluent.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "BABFT Gold Farm",
     SubTitle = "by KiloUI",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Acrylic = false,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
 })
