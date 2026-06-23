@@ -1,90 +1,133 @@
--- // ДИАГНОСТИКА: проверяем структуру Workspace BABFT
-print("[DIAG] Запуск диагностики BABFT...")
+-- // Driving Empire Диагностика
+-- // Изучаем структуру игры
+
+print("[DE DIAG] Запуск диагностики Driving Empire...")
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- // Проверяем BoatStages
-local boatStages = Workspace:FindFirstChild("BoatStages")
-if boatStages then
-    print("[DIAG] BoatStages найден!")
-    local normalStages = boatStages:FindFirstChild("NormalStages")
-    if normalStages then
-        print("[DIAG] NormalStages найден!")
-        print("[DIAG] Дочерние объекты NormalStages:")
-        for _, child in ipairs(normalStages:GetChildren()) do
-            print("  - " .. child.Name)
+-- // Проверяем основные папки
+local foldersToCheck = {
+    "Vehicles",
+    "HousePlots",
+    "Races",
+    "Dealerships",
+    "Map",
+    "City"
+}
+
+print("\n[DE DIAG] Проверка папок в Workspace:")
+for _, folderName in ipairs(foldersToCheck) do
+    local folder = Workspace:FindFirstChild(folderName)
+    if folder then
+        print("  ✓ " .. folderName .. " найден")
+        -- Показываем первые 5 дочерних объектов
+        local children = folder:GetChildren()
+        print("    Дочерние объекты (первые 5):")
+        for i = 1, math.min(5, #children) do
+            print("      - " .. children[i].Name .. " (" .. children[i].ClassName .. ")")
         end
-        
-        -- // Проверяем первый этап
-        local stage1 = normalStages:FindFirstChild("CaveStage1")
-        if stage1 then
-            print("[DIAG] CaveStage1 найден!")
-            local darkness = stage1:FindFirstChild("DarknessPart")
-            if darkness then
-                print("[DIAG] DarknessPart найден! Position: " .. tostring(darkness.Position))
-            else
-                print("[DIAG] ОШИБКА: DarknessPart не найден в CaveStage1")
-            end
-        else
-            print("[DIAG] ОШИБКА: CaveStage1 не найден")
-        end
-        
-        -- // Проверяем TheEnd
-        local theEnd = normalStages:FindFirstChild("TheEnd")
-        if theEnd then
-            print("[DIAG] TheEnd найден!")
-            local chest = theEnd:FindFirstChild("GoldenChest")
-            if chest then
-                print("[DIAG] GoldenChest найден!")
-                local trigger = chest:FindFirstChild("Trigger")
-                if trigger then
-                    print("[DIAG] Trigger найден! Position: " .. tostring(trigger.Position))
-                else
-                    print("[DIAG] ОШИБКА: Trigger не найден")
-                end
-            else
-                print("[DIAG] ОШИБКА: GoldenChest не найден")
-            end
-        else
-            print("[DIAG] ОШИБКА: TheEnd не найден")
+        if #children > 5 then
+            print("      ... и ещё " .. (#children - 5))
         end
     else
-        print("[DIAG] ОШИБКА: NormalStages не найден в BoatStages")
-        print("[DIAG] Доступные папки в BoatStages:")
-        for _, child in ipairs(boatStages:GetChildren()) do
-            print("  - " .. child.Name)
+        print("  ✗ " .. folderName .. " НЕ найден")
+    end
+end
+
+-- // Проверяем Races
+print("\n[DE DIAG] Поиск гонок:")
+local races = Workspace:FindFirstChild("Races")
+if races then
+    for _, race in ipairs(races:GetChildren()) do
+        print("  - " .. race.Name)
+        -- Проверяем структуру гонки
+        local checkpoints = race:FindFirstChild("Checkpoints") or race:FindFirstChild("Parts")
+        if checkpoints then
+            print("    Checkpoints/Parts: " .. #checkpoints:GetChildren() .. " объектов")
         end
     end
 else
-    print("[DIAG] ОШИБКА: BoatStages не найден в Workspace!")
-    print("[DIAG] Доступные объекты в Workspace:")
-    for _, child in ipairs(Workspace:GetChildren()) do
-        if child:IsA("Folder") or child:IsA("Model") then
-            print("  - " .. child.Name .. " (" .. child.ClassName .. ")")
+    print("  Папка Races не найдена, ищем альтернативы...")
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if obj.Name:lower():find("race") or obj.Name:lower():find("circuit") then
+            print("  Найдено: " .. obj.Name)
         end
     end
 end
 
--- // Проверяем персонажа
+-- // Проверяем Dealerships
+print("\n[DE DIAG] Поиск дилершипov:")
+local dealerships = Workspace:FindFirstChild("Dealerships")
+if dealerships then
+    for _, d in ipairs(dealerships:GetChildren()) do
+        print("  - " .. d.Name)
+    end
+else
+    print("  Папка Dealerships не найдена")
+end
+
+-- // Проверяем персонажа и машину
+print("\n[DE DIAG] Персонаж и машина:")
 local character = LocalPlayer.Character
 if character then
+    print("  Character найден")
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if hrp then
-        print("[DIAG] HumanoidRootPart найден! Position: " .. tostring(hrp.Position))
-    else
-        print("[DIAG] ОШИБКА: HumanoidRootPart не найден")
+        print("  HRP Position: " .. tostring(hrp.Position))
+    end
+    
+    -- Ищем VehicleSeat в персонаже
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("VehicleSeat") or obj:IsA("Seat") then
+            print("  Найдено сиденье: " .. obj.Parent.Name)
+        end
     end
 else
-    print("[DIAG] ОШИБКА: Character не найден")
+    print("  Character НЕ найден")
 end
 
--- // Проверяем firetouchinterest
-if firetouchinterest then
-    print("[DIAG] firetouchinterest доступен")
-else
-    print("[DIAG] ОШИБКА: firetouchinterest НЕ доступен в этом executor!")
+-- // Ищем машины в Workspace
+print("\n[DE DIAG] Поиск машин в Workspace:")
+local vehicleCount = 0
+for _, obj in ipairs(Workspace:GetChildren()) do
+    if obj:IsA("Model") then
+        local seat = obj:FindFirstChildOfClass("VehicleSeat")
+        if seat then
+            vehicleCount = vehicleCount + 1
+            if vehicleCount <= 5 then
+                print("  - " .. obj.Name .. " (Seat: " .. seat.Name .. ")")
+            end
+        end
+    end
+end
+print("  Всего машин найдено: " .. vehicleCount)
+
+-- // Проверяем RemoteEvents
+print("\n[DE DIAG] RemoteEvents в ReplicatedStorage:")
+local RS = game:GetService("ReplicatedStorage")
+local remoteCount = 0
+for _, obj in ipairs(RS:GetDescendants()) do
+    if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+        remoteCount = remoteCount + 1
+        if remoteCount <= 10 then
+            print("  - " .. obj.Name .. " (" .. obj.ClassName .. ")")
+        end
+    end
+end
+print("  Всего RemoteEvents: " .. remoteCount)
+
+-- // Проверяем PlayerGui
+print("\n[DE DIAG] GUI в PlayerGui:")
+local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+if PlayerGui then
+    for _, gui in ipairs(PlayerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            print("  - " .. gui.Name)
+        end
+    end
 end
 
-print("[DIAG] Диагностика завершена")
+print("\n[DE DIAG] Диагностика завершена")
+print("[DE DIAG] Скопируй этот вывод и покажи разработчику")
