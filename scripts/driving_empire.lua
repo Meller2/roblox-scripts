@@ -1,20 +1,20 @@
--- // Driving Empire Auto Farm v2
--- // Реальная логика на основе диагностики
+-- // Driving Empire Auto Farm v3
+-- // Реальная логика на основе RemoteEvents
 
-print("[DE] Загрузка скрипта...")
+print("[DE v3] Загрузка скрипта...")
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua", true))()
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+
 local Window = Fluent:CreateWindow({
     Title = "Driving Empire",
-    SubTitle = "by KiloUI",
+    SubTitle = "by KiloUI v3",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = false,
@@ -24,8 +24,10 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     Farm = Window:AddTab({ Title = "Автофарм", Icon = "coins" }),
+    Race = Window:AddTab({ Title = "Гонки", Icon = "flag" }),
     Teleport = Window:AddTab({ Title = "Телепорт", Icon = "map-pin" }),
     Vehicle = Window:AddTab({ Title = "Машина", Icon = "car" }),
+    Quest = Window:AddTab({ Title = "Квесты", Icon = "scroll" }),
     Stats = Window:AddTab({ Title = "Статы", Icon = "bar-chart-3" }),
     Log = Window:AddTab({ Title = "Логи", Icon = "scroll-text" })
 }
@@ -40,147 +42,499 @@ local function log(msg)
     if #logBuffer > 100 then table.remove(logBuffer, 1) end
 end
 
--- // Получить данные игрока
-local function getPlayerData()
-    local gpd = ReplicatedStorage:FindFirstChild("GetPlayerData")
-    if gpd and gpd:IsA("RemoteFunction") then
-        local ok, data = pcall(function() return gpd:InvokeServer() end)
-        if ok then return data end
+-- // ============ RACE FUNCTIONS ============
+
+local RaceRemotes = {
+    JoinQueue = Remotes:FindFirstChild("JoinRacingQueue"),
+    LeaveQueue = Remotes:FindFirstChild("LeaveRacingQueue"),
+    QueueUpdate = Remotes:FindFirstChild("UpdatePlayerQueueState"),
+    RaceJoined = Remotes:FindFirstChild("RaceJoined"),
+    RaceLeft = Remotes:FindFirstChild("RaceLeft"),
+    RaceState = Remotes:FindFirstChild("RaceStateUpdate"),
+    RacePlacement = Remotes:FindFirstChild("RacePlacementUpdate"),
+    RaceFinished = Remotes:FindFirstChild("RaceFinished"),
+    RaceDNF = Remotes:FindFirstChild("RaceDNF"),
+    RaceCheckpoint = Remotes:FindFirstChild("RaceCheckpoint"),
+    RaceFinishLine = Remotes:FindFirstChild("RaceFinishLine"),
+    RaceQuickRestart = Remotes:FindFirstChild("RaceQuickRestart"),
+    RaceStartTimeTrial = Remotes:FindFirstChild("RaceStartTimeTrial"),
+    GetLeaderboard = Remotes:FindFirstChild("GetRaceLeaderboardData"),
+    GetUserPlacement = Remotes:FindFirstChild("GetRaceLeaderboardUserPlacement"),
+    ClaimRewards = Remotes:FindFirstChild("RaceLeaderboardClaimRewards"),
+    RaceQueue = Remotes:FindFirstChild("RaceQueue"),
+    MultiplierScore = Remotes:FindFirstChild("MultiplierRaceScore")
+}
+
+local currentRaceState = "none"
+local raceCount = 0
+local totalEarnings = 0
+
+-- // Встать в очередь на гонку
+local function joinRaceQueue(raceType)
+    if RaceRemotes.JoinQueue and RaceRemotes.JoinQueue:IsA("RemoteFunction") then
+        local ok, result = pcall(function()
+            return RaceRemotes.JoinQueue:InvokeServer(raceType or "Circuit")
+        end)
+        if ok then
+            log("Встал в очередь на гонку: " .. tostring(raceType))
+            return result
+        else
+            log("Ошибка входа в очередь: " .. tostring(result))
+        end
+    elseif RaceRemotes.RaceQueue and RaceRemotes.RaceQueue:IsA("RemoteEvent") then
+        RaceRemotes.RaceQueue:FireServer(raceType or "Circuit")
+        log("Отправлен запрос на гонку: " .. tostring(raceType))
+        return true
+    end
+    return false
+end
+
+-- // Выйти из очереди
+local function leaveRaceQueue()
+    if RaceRemotes.LeaveQueue then
+        RaceRemotes.LeaveQueue:FireServer()
+        log("Вышел из очереди гонок")
+    end
+end
+
+-- // Быстрый рестарт гонки
+local function quickRestartRace()
+    if RaceRemotes.RaceQuickRestart then
+        RaceRemotes.RaceQuickRestart:FireServer()
+        log("Быстрый рестарт гонки")
+    end
+end
+
+-- // Забрать награды
+local function claimRaceRewards()
+    if RaceRemotes.ClaimRewards then
+        RaceRemotes.ClaimRewards:FireServer()
+        log("Награды за гонку забраны")
+    end
+end
+
+-- // Получить данные лидерборда
+local function getRaceLeaderboard()
+    if RaceRemotes.GetLeaderboard and RaceRemotes.GetLeaderboard:IsA("RemoteFunction") then
+        local ok, data = pcall(function()
+            return RaceRemotes.GetLeaderboard:InvokeServer()
+        end)
+        if ok then
+            log("Данные лидерборда получены")
+            return data
+        end
     end
     return nil
 end
 
--- // TeleportMenu кнопки
-local function getTeleportButtons()
-    local tm = PlayerGui:FindFirstChild("TeleportMenu")
-    if not tm then return {} end
-    local buttons = {}
-    for _, obj in ipairs(tm:GetDescendants()) do
-        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            if obj.Text and obj.Text ~= "" then
-                buttons[obj.Text] = obj
-            elseif obj.Name and obj.Name ~= "" then
-                buttons[obj.Name] = obj
-            end
-        end
-    end
-    return buttons
-end
+-- // Авто-гонки
+local autoRaceActive = false
+local autoRaceType = "Circuit"
 
--- // Клик по кнопке TeleportMenu
-local function clickTeleport(text)
-    local buttons = getTeleportButtons()
-    for name, btn in pairs(buttons) do
-        if name:lower():find(text:lower()) then
-            log("Клик по телепорту: " .. name)
-            fireclickdetector(btn)
-            return true
-        end
-    end
-    log("Телепорт не найден: " .. text)
-    return false
-end
-
--- // Телепорт к координатам
-local function teleportTo(pos)
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    hrp.CFrame = CFrame.new(pos)
-    log("Телепорт к " .. tostring(pos))
-end
-
--- // Авто-вождение (зажим W)
-local autoDrive = false
-local function startAutoDrive()
-    autoDrive = true
-    log("Авто-вождение включено")
+local function startAutoRace()
+    autoRaceActive = true
+    log("Авто-гонки запущены (тип: " .. autoRaceType .. ")")
+    
     task.spawn(function()
-        while autoDrive do
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new(0, 0))
-            -- Симуляция нажатия W
-            local args = {
-                [1] = "W",
-                [2] = true
-            }
-            -- Пробуем разные методы
-            local ok = pcall(function()
-                UserInputService:VirtualKeyDown(Enum.KeyCode.W)
-            end)
-            task.wait(0.1)
+        while autoRaceActive do
+            -- Встаём в очередь
+            joinRaceQueue(autoRaceType)
+            
+            -- Ждём начала гонки
+            local waited = 0
+            while autoRaceActive and currentRaceState == "none" and waited < 30 do
+                task.wait(1)
+                waited = waited + 1
+            end
+            
+            if currentRaceState ~= "none" then
+                log("Гонка началась!")
+                
+                -- Ждём окончания гонки
+                while autoRaceActive and currentRaceState ~= "finished" and currentRaceState ~= "dnf" do
+                    task.wait(1)
+                end
+                
+                if currentRaceState == "finished" then
+                    raceCount = raceCount + 1
+                    log("Гонка #" .. raceCount .. " завершена!")
+                    claimRaceRewards()
+                elseif currentRaceState == "dnf" then
+                    log("Гонка не завершена (DNF)")
+                end
+                
+                -- Быстрый рестарт
+                task.wait(2)
+                quickRestartRace()
+                currentRaceState = "none"
+            else
+                log("Таймаут ожидания гонки, выход из очереди")
+                leaveRaceQueue()
+            end
+            
+            task.wait(3)
         end
     end)
 end
 
-local function stopAutoDrive()
-    autoDrive = false
-    pcall(function() UserInputService:VirtualKeyUp(Enum.KeyCode.W) end)
-    log("Авто-вождение выключено")
+local function stopAutoRace()
+    autoRaceActive = false
+    leaveRaceQueue()
+    log("Авто-гонки остановлены")
 end
 
--- // ============ UI ============
+-- // Слушаем события гонок
+if RaceRemotes.RaceState then
+    RaceRemotes.RaceState:Connect(function(state)
+        currentRaceState = tostring(state)
+        log("Состояние гонки: " .. currentRaceState)
+    end)
+end
 
+if RaceRemotes.RaceFinished then
+    RaceRemotes.RaceFinished:Connect(function(data)
+        log("Гонка финиширована!")
+        if data then
+            log("Данные финиша: " .. tostring(data))
+        end
+    end)
+end
+
+if RaceRemotes.RaceDNF then
+    RaceRemotes.RaceDNF:Connect(function()
+        currentRaceState = "dnf"
+        log("Гонка не завершена (DNF)")
+    end)
+end
+
+if RaceRemotes.RacePlacement then
+    RaceRemotes.RacePlacement:Connect(function(position)
+        log("Позиция в гонке: " .. tostring(position))
+    end)
+end
+
+-- // ============ MONEY FUNCTIONS ============
+
+local CollectCash = Remotes:FindFirstChild("CollectCashDrop")
+
+local function collectNearbyCash()
+    if CollectCash then
+        -- Ищем деньги рядом с игроком
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj.Name:lower():find("cash") or obj.Name:lower():find("money") or obj.Name:lower():find("drop") then
+                if obj:IsA("BasePart") then
+                    local dist = (obj.Position - hrp.Position).Magnitude
+                    if dist < 50 then
+                        CollectCash:FireServer(obj)
+                        log("Собрал деньги: " .. obj.Name)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- // ============ DELIVERY FUNCTIONS ============
+
+local DeliveryRemotes = {
+    Pickup = Remotes:FindFirstChild("AttemptDeliveryPickup"),
+    Complete = Remotes:FindFirstChild("AttemptDeliveryComplete"),
+    StateChanged = Remotes:FindFirstChild("DeliveryStateChanged"),
+    Completed = Remotes:FindFirstChild("DeliveryCompleted"),
+    LocationInteracted = Remotes:FindFirstChild("DeliveryLocationInteracted"),
+    LocationLeft = Remotes:FindFirstChild("DeliveryLocationLeft"),
+    PackageStolen = Remotes:FindFirstChild("DeliveryPackageStolen")
+}
+
+local autoDeliveryActive = false
+
+local function startAutoDelivery()
+    autoDeliveryActive = true
+    log("Авто-доставки запущены")
+    
+    task.spawn(function()
+        while autoDeliveryActive do
+            if DeliveryRemotes.Pickup and DeliveryRemotes.Pickup:IsA("RemoteFunction") then
+                local ok, result = pcall(function()
+                    return DeliveryRemotes.Pickup:InvokeServer()
+                end)
+                if ok then
+                    log("Доставка взята")
+                    task.wait(5) -- Ждём доставку
+                    
+                    if DeliveryRemotes.Complete and DeliveryRemotes.Complete:IsA("RemoteFunction") then
+                        local ok2, result2 = pcall(function()
+                            return DeliveryRemotes.Complete:InvokeServer()
+                        end)
+                        if ok2 then
+                            log("Доставка завершена")
+                        end
+                    end
+                else
+                    log("Ошибка доставки: " .. tostring(result))
+                end
+            end
+            task.wait(10)
+        end
+    end)
+end
+
+local function stopAutoDelivery()
+    autoDeliveryActive = false
+    log("Авто-доставки остановлены")
+end
+
+-- // ============ QUEST FUNCTIONS ============
+
+local QuestRemotes = {
+    Update = Remotes:FindFirstChild("QuestsUpdate"),
+    Claimed = Remotes:FindFirstChild("QuestClaimed"),
+    ClaimReward = Remotes:FindFirstChild("ClaimQuestReward"),
+    SetTracked = Remotes:FindFirstChild("SetTrackedQuest"),
+    PinQuest = Remotes:FindFirstChild("PinQuest")
+}
+
+local function claimAllQuestRewards()
+    if QuestRemotes.ClaimReward then
+        QuestRemotes.ClaimReward:FireServer()
+        log("Награды за квесты забраны")
+    end
+end
+
+-- // ============ TELEPORT FUNCTIONS ============
+
+local TeleportRemote = Remotes:FindFirstChild("Teleport")
+local GetDestCFrame = Remotes:FindFirstChild("GetDestinationCFrame")
+
+local function teleportToDestination(destName)
+    if TeleportRemote then
+        TeleportRemote:FireServer(destName)
+        log("Телепорт к: " .. tostring(destName))
+    end
+end
+
+local function teleportToCoords(x, y, z)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp.CFrame = CFrame.new(x, y, z)
+    log("Телепорт к координатам: " .. x .. ", " .. y .. ", " .. z)
+end
+
+-- // ============ VEHICLE FUNCTIONS ============
+
+local VehicleRemotes = {
+    GetChassis = Remotes:FindFirstChild("GetChassis"),
+    ChangeCarStuff = Remotes:FindFirstChild("ChangeCarStuff"),
+    VehicleEvent = Remotes:FindFirstChild("VehicleEvent"),
+    Chassis = Remotes:FindFirstChild("Chassis"),
+    StarterCar = Remotes:FindFirstChild("StarterCar"),
+    SellCar = Remotes:FindFirstChild("SellCar"),
+    GetStats = Remotes:FindFirstChild("GetVehicleStats")
+}
+
+local function spawnStarterCar()
+    if VehicleRemotes.StarterCar and VehicleRemotes.StarterCar:IsA("RemoteFunction") then
+        local ok, result = pcall(function()
+            return VehicleRemotes.StarterCar:InvokeServer()
+        end)
+        if ok then
+            log("Стартовая машина заспавнена")
+            return result
+        else
+            log("Ошибка спавна машины: " .. tostring(result))
+        end
+    end
+end
+
+local function getVehicleStats()
+    if VehicleRemotes.GetStats and VehicleRemotes.GetStats:IsA("RemoteFunction") then
+        local ok, data = pcall(function()
+            return VehicleRemotes.GetStats:InvokeServer()
+        end)
+        if ok then
+            log("Статы машины получены")
+            return data
+        end
+    end
+    return nil
+end
+
+-- // ============ PLAYER DATA ============
+
+local GetPlayerData = ReplicatedStorage:FindFirstChild("VoldexAdmin")
+    and ReplicatedStorage.VoldexAdmin:FindFirstChild("RemoteFunctions")
+    and ReplicatedStorage.VoldexAdmin.RemoteFunctions:FindFirstChild("GetPlayerData")
+
+local function getPlayerData()
+    if GetPlayerData and GetPlayerData:IsA("RemoteFunction") then
+        local ok, data = pcall(function()
+            return GetPlayerData:InvokeServer()
+        end)
+        if ok then
+            log("Данные игрока получены")
+            return data
+        else
+            log("Ошибка получения данных: " .. tostring(data))
+        end
+    end
+    return nil
+end
+
+local GetStatsRemote = Remotes:FindFirstChild("GetStats")
+
+local function getPlayerStats()
+    if GetStatsRemote and GetStatsRemote:IsA("RemoteFunction") then
+        local ok, data = pcall(function()
+            return GetStatsRemote:InvokeServer()
+        end)
+        if ok then
+            log("Статы получены")
+            return data
+        end
+    end
+    return nil
+end
+
+-- // ============ UI ELEMENTS ============
+
+-- // Farm Tab
 Tabs.Farm:AddParagraph({
-    Title = "Driving Empire Farm",
-    Content = "Автоматизация заработка\nВерсия: 2.0"
+    Title = "Driving Empire Farm v3",
+    Content = "Автоматизация через RemoteEvents\nby KiloUI"
 })
 
-Tabs.Farm:AddSection("Авто-вождение")
+Tabs.Farm:AddSection("Авто-гонки")
 
-local DriveToggle = Tabs.Farm:AddToggle("AutoDrive", {
-    Title = "Авто-вождение (W)",
+local RaceTypeDropdown = Tabs.Farm:AddDropdown("RaceType", {
+    Title = "Тип гонки",
+    Values = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"},
+    Multi = false,
+    Default = 1,
+})
+
+RaceTypeDropdown:SetValue("Circuit")
+
+RaceTypeDropdown:OnChanged(function(value)
+    autoRaceType = value
+    log("Тип гонки изменён: " .. value)
+end)
+
+local AutoRaceToggle = Tabs.Farm:AddToggle("AutoRace", {
+    Title = "Авто-гонки",
     Default = false
 })
 
-DriveToggle:OnChanged(function(v)
-    if v then startAutoDrive() else stopAutoDrive() end
+AutoRaceToggle:OnChanged(function(v)
+    if v then
+        startAutoRace()
+    else
+        stopAutoRace()
+    end
 end)
 
-local SpeedSlider = Tabs.Farm:AddSlider("DriveSpeed", {
-    Title = "Скорость бота",
-    Description = "Задержка между нажатиями",
-    Default = 50,
-    Min = 10,
-    Max = 200,
-    Rounding = 0,
-    Callback = function(v) end
-})
-
-Tabs.Farm:AddSection("Гонки")
-
 Tabs.Farm:AddButton({
-    Title = "Начать Circuit Race",
-    Description = "Телепорт и старт гонки",
+    Title = "Быстрый рестарт",
+    Description = "Перезапустить текущую гонку",
     Callback = function()
-        log("Запуск Circuit Race...")
-        clickTeleport("Circuit")
-        Fluent:Notify({Title = "Circuit Race", Content = "Телепорт к гонке...", Duration = 3})
+        quickRestartRace()
     end
 })
 
 Tabs.Farm:AddButton({
-    Title = "Начать Cross Country",
-    Description = "Телепорт к Cross Country",
+    Title = "Забрать награды",
+    Description = "Получить награды за гонку",
     Callback = function()
-        log("Запуск Cross Country...")
-        clickTeleport("Cross")
-        Fluent:Notify({Title = "Cross Country", Content = "Телепорт к гонке...", Duration = 3})
+        claimRaceRewards()
     end
 })
+
+Tabs.Farm:AddSection("Авто-доставки")
+
+local AutoDeliveryToggle = Tabs.Farm:AddToggle("AutoDelivery", {
+    Title = "Авто-доставки",
+    Default = false
+})
+
+AutoDeliveryToggle:OnChanged(function(v)
+    if v then
+        startAutoDelivery()
+    else
+        stopAutoDelivery()
+    end
+end)
+
+Tabs.Farm:AddSection("Сбор денег")
 
 Tabs.Farm:AddButton({
-    Title = "Начать Highway Race",
-    Description = "Телепорт к Highway",
+    Title = "Собрать деньги рядом",
+    Description = "Собрать все деньги в радиусе 50м",
     Callback = function()
-        log("Запуск Highway Race...")
-        clickTeleport("Highway")
-        Fluent:Notify({Title = "Highway Race", Content = "Телепорт к гонке...", Duration = 3})
+        collectNearbyCash()
     end
 })
 
--- // Teleport tab
+-- // Race Tab
+Tabs.Race:AddParagraph({
+    Title = "Управление гонками",
+    Content = "Ручное управление гонками"
+})
+
+Tabs.Race:AddSection("Встать в очередь")
+
+local raceTypes = {"Circuit", "CrossCountry", "Highway", "Drag", "Drawbridge"}
+for _, rt in ipairs(raceTypes) do
+    Tabs.Race:AddButton({
+        Title = rt .. " Race",
+        Description = "Встать в очередь на " .. rt,
+        Callback = function()
+            joinRaceQueue(rt)
+        end
+    })
+end
+
+Tabs.Race:AddSection("Управление")
+
+Tabs.Race:AddButton({
+    Title = "Выйти из очереди",
+    Callback = function()
+        leaveRaceQueue()
+    end
+})
+
+Tabs.Race:AddButton({
+    Title = "Быстрый рестарт",
+    Callback = function()
+        quickRestartRace()
+    end
+})
+
+Tabs.Race:AddButton({
+    Title = "Забрать награды",
+    Callback = function()
+        claimRaceRewards()
+    end
+})
+
+Tabs.Race:AddSection("Лидерборд")
+
+Tabs.Race:AddButton({
+    Title = "Обновить лидерборд",
+    Callback = function()
+        local data = getRaceLeaderboard()
+        if data then
+            log("Лидерборд: " .. tostring(data))
+        end
+    end
+})
+
+-- // Teleport Tab
 Tabs.Teleport:AddParagraph({
     Title = "Телепортация",
     Content = "Быстрое перемещение по карте"
@@ -188,36 +542,35 @@ Tabs.Teleport:AddParagraph({
 
 Tabs.Teleport:AddSection("Дилершипы")
 
-local dLocations = {
-    {"Cars & Moto", "Car"},
-    {"Boats", "Boat"},
-    {"Planes", "Plane"},
-    {"Helicopters", "Heli"}
+local dealerships = {
+    {"Cars & Motorcycles", "CarDealership"},
+    {"Boats", "BoatDealership"},
+    {"Planes & Helicopters", "PlaneDealership"}
 }
 
-for _, d in ipairs(dLocations) do
+for _, d in ipairs(dealerships) do
     Tabs.Teleport:AddButton({
         Title = d[1],
         Callback = function()
-            clickTeleport(d[2])
+            teleportToDestination(d[2])
         end
     })
 end
 
 Tabs.Teleport:AddSection("Гонки")
 
-local rLocations = {
-    {"Circuit Race", "Circuit"},
-    {"Cross Country", "Cross"},
-    {"Highway Race", "Highway"},
-    {"Drag Race", "Drag"}
+local raceTeleports = {
+    {"Circuit Race", "CircuitRace"},
+    {"Cross Country", "CrossCountry"},
+    {"Highway Race", "HighwayRace"},
+    {"Drag Race", "DragRace"}
 }
 
-for _, r in ipairs(rLocations) do
+for _, r in ipairs(raceTeleports) do
     Tabs.Teleport:AddButton({
         Title = r[1],
         Callback = function()
-            clickTeleport(r[2])
+            teleportToDestination(r[2])
         end
     })
 end
@@ -255,26 +608,33 @@ Tabs.Teleport:AddButton({
         local x = tonumber(XInput.Value) or 0
         local y = tonumber(YInput.Value) or 50
         local z = tonumber(ZInput.Value) or 0
-        teleportTo(Vector3.new(x, y, z))
-        Fluent:Notify({Title = "Телепорт", Content = "Перемещение к " .. x .. ", " .. y .. ", " .. z, Duration = 3})
+        teleportToCoords(x, y, z)
     end
 })
 
--- // Vehicle tab
+-- // Vehicle Tab
 Tabs.Vehicle:AddParagraph({
     Title = "Управление машиной",
-    Content = "Функции для вашего транспорта"
+    Content = "Функции для транспорта"
 })
 
-Tabs.Vehicle:AddSection("Действия")
+Tabs.Vehicle:AddSection("Спавн")
 
 Tabs.Vehicle:AddButton({
-    Title = "Показать HUD машины",
+    Title = "Заспавнить стартовую машину",
     Callback = function()
-        local hud = PlayerGui:FindFirstChild("ChassisHUD")
-        if hud then
-            hud.Enabled = true
-            log("ChassisHUD включён")
+        spawnStarterCar()
+    end
+})
+
+Tabs.Vehicle:AddSection("Информация")
+
+Tabs.Vehicle:AddButton({
+    Title = "Получить статы машины",
+    Callback = function()
+        local stats = getVehicleStats()
+        if stats then
+            log("Статы машины: " .. tostring(stats))
         end
     end
 })
@@ -293,14 +653,32 @@ Tabs.Vehicle:AddButton({
     end
 })
 
--- // Stats tab
-Tabs.Stats:AddParagraph({
-    Title = "Статистика",
-    Content = "Данные аккаунта"
+-- // Quest Tab
+Tabs.Quest:AddParagraph({
+    Title = "Квесты",
+    Content = "Управление квестами"
 })
 
+Tabs.Quest:AddSection("Награды")
+
+Tabs.Quest:AddButton({
+    Title = "Забрать все награды",
+    Description = "Получить награды за завершённые квесты",
+    Callback = function()
+        claimAllQuestRewards()
+    end
+})
+
+-- // Stats Tab
+Tabs.Stats:AddParagraph({
+    Title = "Статистика",
+    Content = "Данные аккаунта и прогресс"
+})
+
+Tabs.Stats:AddSection("Данные игрока")
+
 Tabs.Stats:AddButton({
-    Title = "Обновить статы",
+    Title = "Обновить данные",
     Description = "Загрузить данные с сервера",
     Callback = function()
         local data = getPlayerData()
@@ -311,9 +689,16 @@ Tabs.Stats:AddButton({
                     log("  " .. tostring(k) .. ": " .. tostring(v))
                 end
             end
-            Fluent:Notify({Title = "Статы", Content = "Данные загружены, смотри логи", Duration = 3})
-        else
-            log("Не удалось получить данные")
+        end
+    end
+})
+
+Tabs.Stats:AddButton({
+    Title = "Обновить статы",
+    Callback = function()
+        local stats = getPlayerStats()
+        if stats then
+            log("Статы: " .. tostring(stats))
         end
     end
 })
@@ -337,19 +722,29 @@ else
     })
 end
 
--- // Log tab
+Tabs.Stats:AddSection("Статистика фарма")
+
+Tabs.Stats:AddLabel = Tabs.Stats:AddParagraph({
+    Title = "Прогресс",
+    Content = "Гонок завершено: " .. raceCount .. "\nВсего заработано: " .. totalEarnings
+})
+
+-- // Log Tab
 Tabs.Log:AddParagraph({
     Title = "Лог событий",
     Content = "Все действия скрипта"
 })
 
+-- // ============ STARTUP ============
+
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Driving Empire",
-    Content = "Скрипт v2 загружен",
-    SubContent = "by KiloUI",
+    Title = "Driving Empire v3",
+    Content = "Скрипт загружен успешно",
+    SubContent = "RemoteEvents активны",
     Duration = 5
 })
 
-log("Скрипт загружен успешно")
+log("Скрипт v3 загружен")
+log("RemoteEvents найдены: " .. #Remotes:GetChildren())
